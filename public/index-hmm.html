@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hybrid Mediatization Mapping (HMM) - Ekosistem BUMDes Ketapanrame</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <!-- FontAwesome 6 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    body {
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    .node-card {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    .node-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    .node-dimmed {
+      opacity: 0.25 !important;
+      filter: grayscale(0.4);
+    }
+    .node-active {
+      box-shadow: 0 0 0 3px #2563eb, 0 10px 15px -3px rgb(37 99 235 / 0.2) !important;
+      background-color: #eff6ff !important;
+      transform: scale(1.02);
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 lg:p-8 min-h-screen">
+
+  <div class="max-w-[1400px] mx-auto bg-white rounded-3xl border border-slate-300 shadow-xl overflow-hidden p-6 sm:p-8 space-y-6">
+    
+    <!-- Top Action Toolbar -->
+    <div class="flex flex-wrap items-center justify-between pb-4 border-b border-slate-200 gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
+          <i class="fa-solid fa-diagram-project"></i>
+        </div>
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-700">Riset Kualitatif &amp; NVivo Crosstab</span>
+          <h2 class="text-lg font-extrabold text-slate-900 leading-tight">Dashboard Interaktif Model HMM</h2>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="reset-btn" onclick="resetHighlight()" class="hidden px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>Reset Sorotan</span>
+        </button>
+        <button onclick="window.print()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-print"></i>
+          <span>Cetak / Simpan PDF</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="text-center space-y-1">
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        Hybrid Mediatization Mapping (HMM)
+      </h1>
+      <p class="text-base font-semibold text-slate-700">
+        Ekosistem BUMDes Ketapanrame
+      </p>
+    </div>
+
+    <!-- Feedback Loop Section (Top Dashed Arrow) -->
+    <div class="relative">
+      <div class="border-2 border-dashed border-blue-500 bg-blue-50/90 rounded-2xl p-3 text-xs text-blue-950 font-semibold flex items-center justify-between shadow-2xs">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-blue-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wide">
+            FEEDBACK LOOP
+          </span>
+          <span class="text-xs">
+            <i class="fa-solid fa-arrows-spin mr-1 text-blue-600"></i>
+            <strong>FEEDBACK:</strong> Trust, legitimasi, dan pengalaman sosial-ekonomi kembali memengaruhi praktik komunikasi dan konten berikutnya
+          </span>
+        </div>
+        <span class="text-xs font-bold text-blue-700 hidden sm:inline">
+          Tahap 8 (Kanan) &larr; Tahap 3 (Praktik)
+        </span>
+      </div>
+    </div>
+
+    <!-- Main Flow Section (6 Columns + Downstream on right side) -->
+    <div class="grid grid-cols-12 gap-3.5 items-start">
+      
+      <!-- KOLOM 1: Peran Aktor (2 cols) -->
+      <div class="col-span-12 sm:col-span-6 lg:col-span-2 space-y-2">
+        <div class="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center">
+          <h3 class="font-extrabold text-xs text-sky-950 uppercase tracking-tight">
+            1. PERAN AKTOR
+          </h3>
+          <p className="text-[10px] text-sky-800 font-medium">(Role-Based Actors)</p>
+        </div>
+
+        <div class="border-2 border-sky-200 rounded-2xl p-2.5 bg-sky-50/30 space-y-2.5">
+          <!-- Ketua BUMDes -->
+          <div id="actor-ketua-bumdes" onclick="selectNode('actor-ketua-bumdes')" class="node-card p-2.5 rounded-xl border border-sky-200 bg-white shadow-2xs">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs shrink-0">
+                <i class="fa-solid fa-user-tie"></i>
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-bold text-xs text-slate-900 leading-tight">Ketua BUMDes</h4>
+                <p class="text-[10px] text-slate-500 font-medium">Pengelola kelembagaan</p>
+              </div>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5 border-t border-slate-100 pt-1.5 leading-snug">
+              <strong>Fungsi:</strong> koordinasi, pengambilan keputusan, informasi, promosi
+            </p>
+          </div>
+
+          <!-- Kepala Desa -->
+          <div id="actor-kades" onclick="selectNode('actor-kades')" class="node-card p-2.5 rounded-xl border border-emerald-200 bg-white shadow-2xs">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs shrink-0">
+                <i class="fa-solid fa-landmark"></i>
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-bold text-xs text-slate-900 leading-tight">Kepala Desa</h4>
+                <p class="text-[10px] text-slate-500 font-medium">Otoritas &amp; legitimasi</p>
+              </div>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5 border-t border-slate-100 pt-1.5 leading-snug">
+              <strong>Fungsi:</strong> legitimasi, dukungan kelembagaan, koordinasi
+            </p>
+          </div>
+
+          <!-- Ketua KUB -->
+          <div id="actor-ketua-kub" onclick="selectNode('actor-ketua-kub')" class="node-card p-2.5 rounded-xl border border-amber-200 bg-white shadow-2xs">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xs shrink-0">
+                <i class="fa-solid fa-users"></i>
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-bold text-xs text-slate-900 leading-tight">Ketua KUB</h4>
+                <p class="text-[10px] text-slate-500 font-medium">Pengelola kelompok komunitas</p>
+              </div>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5 border-t border-slate-100 pt-1.5 leading-snug">
+              <strong>Fungsi:</strong> koordinasi kelompok, promosi, partisipasi
+            </p>
+          </div>
+
+          <!-- Admin Media Sosial -->
+          <div id="actor-admin" onclick="selectNode('actor-admin')" class="node-card p-2.5 rounded-xl border border-purple-200 bg-white shadow-2xs">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs shrink-0">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-bold text-xs text-slate-900 leading-tight">Admin Media Sosial</h4>
+                <p class="text-[10px] text-slate-500 font-medium">Mediator digital</p>
+              </div>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5 border-t border-slate-100 pt-1.5 leading-snug">
+              <strong>Fungsi:</strong> produksi konten, distribusi informasi, pengelolaan platform
+            </p>
+          </div>
+
+          <!-- Tenan Pujasera -->
+          <div id="actor-tenan" onclick="selectNode('actor-tenan')" class="node-card p-2.5 rounded-xl border border-rose-200 bg-white shadow-2xs">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center text-xs shrink-0">
+                <i class="fa-solid fa-store"></i>
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-bold text-xs text-slate-900 leading-tight">Tenan Pujasera/Food Court</h4>
+                <p class="text-[10px] text-slate-500 font-medium">Aktor ekonomi</p>
+              </div>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5 border-t border-slate-100 pt-1.5 leading-snug">
+              <strong>Fungsi:</strong> promosi produk, transaksi, interaksi pelanggan
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KOLOM 2: Media / Platform (2 cols) -->
+      <div class="col-span-12 sm:col-span-6 lg:col-span-2 space-y-2">
+        <div class="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center">
+          <h3 class="font-extrabold text-xs text-sky-950 uppercase tracking-tight">
+            2. MEDIA / PLATFORM
+          </h3>
+          <p class="text-[10px] text-sky-800 font-medium">(Infrastruktur Digital)</p>
+        </div>
+
+        <div class="border border-slate-200 rounded-2xl p-2.5 bg-white space-y-2.5">
+          <!-- TikTok -->
+          <div id="media-tiktok" onclick="selectNode('media-tiktok')" class="node-card p-2.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-xl bg-black text-white flex items-center justify-center text-xs shrink-0 font-bold">
+                <i class="fa-brands fa-tiktok text-cyan-400"></i>
+              </div>
+              <h4 class="font-bold text-xs text-slate-900 leading-tight">TikTok BUMDes &amp; KUB</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
+              <strong>Fungsi:</strong> representasi, storytelling, promosi aktivitas &amp; produk
+            </p>
+          </div>
+
+          <!-- WhatsApp -->
+          <div id="media-wa" onclick="selectNode('media-wa')" class="node-card p-2.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-sm shrink-0">
+                <i class="fa-brands fa-whatsapp"></i>
+              </div>
+              <h4 class="font-bold text-xs text-slate-900 leading-tight">WhatsApp</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
+              <strong>Fungsi:</strong> koordinasi, komunikasi interpersonal dan kelompok
+            </p>
+          </div>
+
+          <!-- Facebook -->
+          <div id="media-fb" onclick="selectNode('media-fb')" class="node-card p-2.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm shrink-0">
+                <i class="fa-brands fa-facebook-f"></i>
+              </div>
+              <h4 class="font-bold text-xs text-slate-900 leading-tight">Facebook</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
+              <strong>Fungsi:</strong> distribusi informasi, jejaring komunitas
+            </p>
+          </div>
+
+          <!-- QRIS -->
+          <div id="media-qris" onclick="selectNode('media-qris')" class="node-card p-2.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                QRIS
+              </div>
+              <h4 class="font-bold text-xs text-slate-900 leading-tight">QRIS</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
+              <strong>Fungsi:</strong> pembayaran digital, mendukung transaksi ekonomi
+            </p>
+          </div>
+
+          <!-- Konten Audio-Visual -->
+          <div id="media-audiovisual" onclick="selectNode('media-audiovisual')" class="node-card p-2.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-xl bg-slate-800 text-white flex items-center justify-center text-xs shrink-0">
+                <i class="fa-solid fa-camera"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-xs text-slate-900 leading-tight">Konten Audio-Visual</h4>
+                <span class="text-[9.5px] text-slate-500 font-medium">(Foto/Video)</span>
+              </div>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
+              <strong>Fungsi:</strong> produksi representasi digital aktivitas &amp; destinasi
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KOLOM 3: Praktik Komunikasi (2 cols) -->
+      <div class="col-span-12 sm:col-span-6 lg:col-span-2 space-y-2">
+        <div class="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center">
+          <h3 class="font-extrabold text-xs text-sky-950 uppercase tracking-tight">
+            3. PRAKTIK KOMUNIKASI
+          </h3>
+          <p class="text-[10px] text-sky-800 font-medium">(Communicative Practices)</p>
+        </div>
+
+        <div class="border border-slate-200 rounded-2xl p-2.5 bg-white space-y-2">
+          <div id="comm-info" onclick="selectNode('comm-info')" class="node-card p-2 rounded-xl border border-amber-200 bg-amber-50/40">
+            <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+              <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] shrink-0"><i class="fa-solid fa-info"></i></span>
+              <span>Informasi</span>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1 leading-snug">Menginformasikan kegiatan, layanan, produk, kebijakan, edukasi masyarakat</p>
+          </div>
+
+          <div id="comm-koordinasi" onclick="selectNode('comm-koordinasi')" class="node-card p-2 rounded-xl border border-amber-200 bg-amber-50/40">
+            <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+              <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] shrink-0"><i class="fa-solid fa-pen-to-square"></i></span>
+              <span>Koordinasi</span>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1 leading-snug">Mengatur kegiatan, menyampaikan keputusan, koordinasi antaraktor dan kelompok</p>
+          </div>
+
+          <div id="comm-promosi" onclick="selectNode('comm-promosi')" class="node-card p-2 rounded-xl border border-amber-200 bg-amber-50/40">
+            <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+              <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] shrink-0"><i class="fa-solid fa-bullhorn"></i></span>
+              <span>Promosi</span>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1 leading-snug">Mempromosikan destinasi, produk, acara, program komunitas</p>
+          </div>
+
+          <div id="comm-representasi" onclick="selectNode('comm-representasi')" class="node-card p-2 rounded-xl border border-amber-200 bg-amber-50/40">
+            <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+              <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] shrink-0"><i class="fa-solid fa-photo-film"></i></span>
+              <span>Representasi</span>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1 leading-snug">Mengubah aktivitas nyata menjadi konten digital (foto, video, cerita, testimoni)</p>
+          </div>
+
+          <div id="comm-interaksi" onclick="selectNode('comm-interaksi')" class="node-card p-2 rounded-xl border border-amber-200 bg-amber-50/40">
+            <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+              <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] shrink-0"><i class="fa-solid fa-comments"></i></span>
+              <span>Interaksi</span>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1 leading-snug">Merespons, berkomentar, diskusi, memberi feedback, komunikasi dua arah</p>
+          </div>
+
+          <div id="comm-partisipasi" onclick="selectNode('comm-partisipasi')" class="node-card p-2 rounded-xl border border-amber-200 bg-amber-50/40">
+            <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+              <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] shrink-0"><i class="fa-solid fa-handshake-angle"></i></span>
+              <span>Partisipasi</span>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1 leading-snug">Mengajak masyarakat terlibat, relawan, dukungan, kolaborasi</p>
+          </div>
+
+          <div id="comm-transaksi" onclick="selectNode('comm-transaksi')" class="node-card p-2 rounded-xl border border-amber-200 bg-amber-50/40">
+            <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+              <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] shrink-0"><i class="fa-solid fa-cart-shopping"></i></span>
+              <span>Transaksi</span>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1 leading-snug">Menghubungkan komunikasi produk dengan pembayaran digital (QRIS)</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KOLOM 4: Pola Interaksi (2 cols) -->
+      <div class="col-span-12 sm:col-span-6 lg:col-span-2 space-y-2">
+        <div class="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center">
+          <h3 class="font-extrabold text-xs text-sky-950 uppercase tracking-tight">
+            4. POLA INTERAKSI
+          </h3>
+          <p class="text-[10px] text-sky-800 font-medium">(Interaction Patterns)</p>
+        </div>
+
+        <div class="border border-slate-200 rounded-2xl p-2.5 bg-white space-y-2.5">
+          <div id="pattern-vertikal" onclick="selectNode('pattern-vertikal')" class="node-card p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-building-columns"></i></div>
+              <h4 class="font-bold text-xs text-slate-900 leading-tight">Vertikal-Institusional</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-800 font-semibold mt-1.5">Kepala Desa &larr;&rarr; Ketua BUMDes</p>
+            <p class="text-[9px] text-slate-500">(kebijakan, dukungan, legitimasi, koordinasi kelembagaan)</p>
+          </div>
+
+          <div id="pattern-horizontal" onclick="selectNode('pattern-horizontal')" class="node-card p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-users-gear"></i></div>
+              <h4 class="font-bold text-xs text-slate-900 leading-tight">Horizontal-Komunitas</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-800 font-semibold mt-1.5">BUMDes &larr;&rarr; KUB &larr;&rarr; Admin &larr;&rarr; Komunitas</p>
+            <p class="text-[9px] text-slate-500">(koordinasi, berbagi informasi, dukungan, partisipasi)</p>
+          </div>
+
+          <div id="pattern-ekonomi" onclick="selectNode('pattern-ekonomi')" class="node-card p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-bag-shopping"></i></div>
+              <h4 class="font-bold text-xs text-slate-900 leading-tight">Ekonomi</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-800 font-semibold mt-1.5">BUMDes/KUB &rarr; Tenan &rarr; Konsumen</p>
+            <p class="text-[9px] text-slate-500">(promosi, informasi produk, transaksi, layanan)</p>
+          </div>
+
+          <div id="pattern-publik" onclick="selectNode('pattern-publik')" class="node-card p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-earth-asia"></i></div>
+              <h4 class="font-bold text-xs text-slate-900 leading-tight">Publik-Digital</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-800 font-semibold mt-1.5">Aktor komunitas/Admin &rarr; Platform &rarr; Publik</p>
+            <p class="text-[9px] text-slate-500">(konten, distribusi, respons publik, citra)</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KOLOM 5: Representasi & Informasi Digital (2 cols) -->
+      <div class="col-span-12 sm:col-span-6 lg:col-span-2 space-y-2">
+        <div class="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center">
+          <h3 class="font-extrabold text-[11px] text-sky-950 uppercase tracking-tight leading-tight">
+            5. REPRESENTASI &amp; INFORMASI DIGITAL
+          </h3>
+          <p class="text-[10px] text-sky-800 font-medium">(Digital Representation)</p>
+        </div>
+
+        <div class="border border-slate-200 rounded-2xl p-2.5 bg-white space-y-2.5">
+          <div id="rep-konten" onclick="selectNode('rep-konten')" class="node-card p-2.5 rounded-xl border border-slate-200 bg-slate-50/80">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-play"></i></div>
+              <h4 class="font-bold text-xs text-slate-900">Konten Digital</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5">Video promosi, kegiatan, edukasi, testimoni</p>
+          </div>
+
+          <div id="rep-info" onclick="selectNode('rep-info')" class="node-card p-2.5 rounded-xl border border-slate-200 bg-slate-50/80">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-file-lines"></i></div>
+              <h4 class="font-bold text-xs text-slate-900">Informasi Digital</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5">Pengumuman, layanan, aksesibilitas informasi</p>
+          </div>
+
+          <div id="rep-produk" onclick="selectNode('rep-produk')" class="node-card p-2.5 rounded-xl border border-slate-200 bg-slate-50/80">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-box"></i></div>
+              <h4 class="font-bold text-xs text-slate-900">Produk Digital</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5">Katalog produk, paket wisata, menu, promo digital</p>
+          </div>
+
+          <div id="rep-transaksi" onclick="selectNode('rep-transaksi')" class="node-card p-2.5 rounded-xl border border-slate-200 bg-slate-50/80">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-qrcode"></i></div>
+              <h4 class="font-bold text-xs text-slate-900">Transaksi Digital</h4>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1.5">Pembayaran digital (QRIS), bukti pembayaran, konfirmasi</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KOLOM 6 & DOWNSTREAM (2 cols) -->
+      <div class="col-span-12 sm:col-span-6 lg:col-span-2 space-y-3">
+        <!-- 6. Visibility & Jangkauan -->
+        <div class="space-y-2">
+          <div class="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center">
+            <h3 class="font-extrabold text-[11px] text-sky-950 uppercase tracking-tight leading-tight">
+              6. VISIBILITY &amp; JANGKAUAN
+            </h3>
+            <p class="text-[10px] text-sky-800 font-medium">(Reach &amp; Visibility)</p>
+          </div>
+
+          <div class="border border-slate-200 rounded-2xl p-2.5 bg-white space-y-2">
+            <div id="vis-publik" onclick="selectNode('vis-publik')" class="node-card p-2 rounded-xl border border-purple-200 bg-purple-50/40">
+              <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+                <span class="w-5 h-5 rounded bg-purple-600 text-white flex items-center justify-center text-[10px] shrink-0"><i class="fa-solid fa-users-viewfinder"></i></span>
+                <span>Visibilitas Publik</span>
+              </div>
+              <p class="text-[9.5px] text-slate-600 mt-1 leading-snug">Konten dilihat lebih luas di luar komunitas lokal</p>
+            </div>
+
+            <div id="vis-pasar" onclick="selectNode('vis-pasar')" class="node-card p-2 rounded-xl border border-purple-200 bg-purple-50/40">
+              <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+                <span class="w-5 h-5 rounded bg-purple-600 text-white flex items-center justify-center text-[10px] shrink-0"><i class="fa-solid fa-chart-line"></i></span>
+                <span>Jangkauan Pasar</span>
+              </div>
+              <p class="text-[9.5px] text-slate-600 mt-1 leading-snug">Pasar lokal &rarr; regional &rarr; potensial nasional</p>
+            </div>
+
+            <div id="vis-wisatawan" onclick="selectNode('vis-wisatawan')" class="node-card p-2 rounded-xl border border-purple-200 bg-purple-50/40">
+              <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+                <span class="w-5 h-5 rounded bg-purple-600 text-white flex items-center justify-center text-[10px] shrink-0"><i class="fa-solid fa-location-dot"></i></span>
+                <span>Jangkauan Wisatawan</span>
+              </div>
+              <p class="text-[9.5px] text-slate-600 mt-1 leading-snug">Informasi destinasi lebih mudah diakses</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Aktivitas Sosial-Ekonomi -->
+        <div id="downstream-aktivitas" onclick="selectNode('downstream-aktivitas')" class="node-card p-2.5 rounded-2xl border-2 border-pink-300 bg-pink-50/90 space-y-1.5">
+          <h3 class="font-extrabold text-[10px] text-pink-950 uppercase tracking-tight text-center">
+            7. AKTIVITAS SOSIAL-EKONOMI
+          </h3>
+          <p class="text-[9px] text-pink-800 text-center font-medium mb-1">(Social-Economic Activities)</p>
+          <div class="space-y-1 text-[8.5px]">
+            <div class="p-1.5 bg-white/95 rounded-lg border border-pink-200 font-medium">
+              <strong class="text-pink-900 block"><i class="fa-solid fa-chart-column text-rose-500 mr-1"></i> Aktivitas Ekonomi:</strong>
+              Peningkatan kunjungan, penjualan, transaksi, pendapatan tenan
+            </div>
+            <div class="p-1.5 bg-white/95 rounded-lg border border-pink-200 font-medium">
+              <strong class="text-pink-900 block"><i class="fa-solid fa-hand-holding-heart text-rose-500 mr-1"></i> Aktivitas Sosial:</strong>
+              Kolaborasi, gotong royong, partisipasi komunitas, penguatan jaringan sosial
+            </div>
+          </div>
+        </div>
+
+        <!-- 8. Kepercayaan & Legitimasi -->
+        <div id="downstream-legitimasi" onclick="selectNode('downstream-legitimasi')" class="node-card p-2.5 rounded-2xl border-2 border-rose-300 bg-rose-50/90 space-y-1.5">
+          <h3 class="font-extrabold text-[10px] text-rose-950 uppercase tracking-tight text-center">
+            8. KEPERCAYAAN &amp; LEGITIMASI
+          </h3>
+          <p class="text-[9px] text-rose-800 text-center font-medium mb-1">(Trust &amp; Legitimacy)</p>
+          <div class="space-y-1 text-[8.5px]">
+            <div class="p-1.5 bg-white/95 rounded-lg border border-rose-200 font-medium">
+              <strong class="text-rose-900 block"><i class="fa-solid fa-shield-halved text-red-600 mr-1"></i> Kepercayaan:</strong>
+              Kredibilitas informasi, pengalaman positif, keandalan layanan
+            </div>
+            <div class="p-1.5 bg-white/95 rounded-lg border border-rose-200 font-medium">
+              <strong class="text-rose-900 block"><i class="fa-solid fa-certificate text-red-600 mr-1"></i> Legitimasi Komunitas:</strong>
+              Pengakuan publik, kepercayaan terhadap BUMDes &amp; kegiatan desa
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Empirical Evidence Section -->
+    <div class="border-2 border-blue-200 rounded-2xl p-4 bg-slate-50/60 space-y-3">
+      <div class="text-center">
+        <h3 class="font-extrabold text-xs sm:text-sm text-blue-950 uppercase tracking-wider">
+          BUKTI EMPIRIS DARI HASIL ANALISIS
+        </h3>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5 text-slate-700">
+        <!-- 1. Word Cloud -->
+        <div id="emp-wordcloud" onclick="selectNode('emp-wordcloud')" class="node-card p-3 rounded-xl border border-blue-200 bg-white shadow-2xs">
+          <div class="flex items-center gap-1.5 font-bold text-xs text-blue-700 mb-1.5">
+            <i class="fa-solid fa-cloud text-blue-600"></i>
+            <span>Word Cloud</span>
+          </div>
+          <p class="text-[9.5px] leading-snug">&bull; <strong>Kata dominan:</strong> digital, media, komunikasi, informasi, platform, usaha, masyarakat, pemasaran, produk, jangkauan, kepercayaan.</p>
+          <p class="text-[9px] text-slate-500 mt-1">&bull; Menunjukkan lanskap wacana digital sangat kuat.</p>
+        </div>
+
+        <!-- 2. Matrix Coding Query -->
+        <div id="emp-matrix" onclick="selectNode('emp-matrix')" class="node-card p-3 rounded-xl border border-emerald-200 bg-white shadow-2xs">
+          <div class="flex items-center gap-1.5 font-bold text-xs text-emerald-700 mb-1.5">
+            <i class="fa-solid fa-table-cells text-emerald-600"></i>
+            <span>Matrix Coding</span>
+          </div>
+          <p class="text-[9.5px] leading-snug">&bull; <strong>Tema utama:</strong> penggunaan media digital, informasi, promosi, partisipasi, pemasaran, produk digital, kepercayaan.</p>
+          <p class="text-[9px] text-slate-500 mt-1">&bull; Menunjukkan keterhubungan tema dan aktor.</p>
+        </div>
+
+        <!-- 3. Evidence Coding -->
+        <div id="emp-evidence" onclick="selectNode('emp-evidence')" class="node-card p-3 rounded-xl border border-amber-200 bg-white shadow-2xs">
+          <div class="flex items-center gap-1.5 font-bold text-xs text-amber-700 mb-1.5">
+            <i class="fa-solid fa-file-invoice text-amber-600"></i>
+            <span>Evidence Coding</span>
+          </div>
+          <p class="text-[9.5px] leading-snug">&bull; <strong>Bukti nyata:</strong> TikTok BUMDes, TikTok KUB, konten audio-visual, QRIS, promosi, produk digital.</p>
+          <p class="text-[9px] text-slate-500 mt-1">&bull; Praktik komunikasi berjalan di berbagai level aktivitas.</p>
+        </div>
+
+        <!-- 4. Word Similarity -->
+        <div id="emp-similarity" onclick="selectNode('emp-similarity')" class="node-card p-3 rounded-xl border border-emerald-200 bg-white shadow-2xs">
+          <div class="flex items-center gap-1.5 font-bold text-xs text-emerald-700 mb-1.5">
+            <i class="fa-solid fa-circle-nodes text-emerald-600"></i>
+            <span>Word Similarity</span>
+          </div>
+          <p class="text-[9.5px] leading-snug">&bull; <strong>Pearson:</strong> 0,679–0,845 (rata-rata 0,746).</p>
+          <p class="text-[9px] text-slate-500 mt-1">&bull; Konvergensi wacana tinggi antaraktor meski peran berbeda.</p>
+        </div>
+
+        <!-- 5. Project Map -->
+        <div id="emp-projectmap" onclick="selectNode('emp-projectmap')" class="node-card p-3 rounded-xl border border-blue-200 bg-white shadow-2xs">
+          <div class="flex items-center gap-1.5 font-bold text-xs text-blue-700 mb-1.5">
+            <i class="fa-solid fa-map-location-dot text-blue-600"></i>
+            <span>Project Map</span>
+          </div>
+          <p class="text-[9.5px] leading-snug">&bull; <strong>Relasi:</strong> aktor, platform, penggunaan media, produk digital, informasi, partisipasi, kepercayaan.</p>
+          <p class="text-[9px] text-slate-500 mt-1">&bull; Ekosistem komunikasi digital yang saling terkait.</p>
+        </div>
+
+        <!-- 6. Crosstab -->
+        <div id="emp-crosstab" onclick="selectNode('emp-crosstab')" class="node-card p-3 rounded-xl border border-purple-200 bg-white shadow-2xs">
+          <div class="flex items-center gap-1.5 font-bold text-xs text-purple-700 mb-1.5">
+            <i class="fa-solid fa-users-rectangle text-purple-600"></i>
+            <span>Crosstab</span>
+          </div>
+          <p class="text-[9.5px] leading-snug">&bull; <strong>Pembeda utama:</strong> Peran aktor (bukan umur, gender, atau pendidikan).</p>
+          <p class="text-[9px] text-slate-500 mt-1">&bull; Posisi dan fungsi menentukan praktik komunikasi.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Section -->
+    <div class="grid grid-cols-12 gap-3.5 items-center pt-2 border-t border-slate-200">
+      <!-- Keterangan -->
+      <div class="col-span-12 sm:col-span-4 lg:col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10.5px] space-y-1.5">
+        <span class="font-bold text-slate-900 block">Keterangan:</span>
+        <div class="flex items-center gap-2 text-slate-700">
+          <span class="w-4 h-0.5 bg-slate-900 inline-block"></span>
+          <span>Alur utama mediatization</span>
+        </div>
+        <div class="flex items-center gap-2 text-blue-700 font-semibold">
+          <span class="w-4 h-0.5 border-b-2 border-dashed border-blue-600 inline-block"></span>
+          <span>Umpan balik (feedback)</span>
+        </div>
+      </div>
+
+      <!-- Inti Deep Mediatization -->
+      <div class="col-span-12 sm:col-span-8 lg:col-span-4 p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl">
+        <span class="font-extrabold text-xs text-amber-950 block mb-0.5">Inti Deep Mediatization</span>
+        <p class="text-[10.5px] text-amber-900 leading-relaxed">
+          Media digital tidak hanya menjadi alat komunikasi, tetapi telah terintegrasi dalam praktik sosial, ekonomi, dan kelembagaan komunitas secara berulang.
+        </p>
+      </div>
+
+      <!-- Kontribusi Teoretis -->
+      <div class="col-span-12 sm:col-span-8 lg:col-span-4 p-3.5 bg-blue-50/90 border border-blue-200 rounded-xl">
+        <span class="font-extrabold text-xs text-blue-950 block mb-0.5">Kontribusi Teoretis</span>
+        <p class="text-[10.5px] text-blue-900 leading-relaxed">
+          HMM memetakan bagaimana peran aktor, platform, dan praktik komunikasi saling membentuk infrastruktur sosial digital yang berdampak pada legitimasi, kepercayaan, serta keberlanjutan ekosistem BUMDes.
+        </p>
+      </div>
+
+      <!-- Output Akhir -->
+      <div class="col-span-12 sm:col-span-4 lg:col-span-2 p-3 bg-white border-2 border-blue-400 rounded-xl text-center shadow-xs">
+        <span class="font-extrabold text-[10px] text-blue-900 uppercase tracking-tight block">Output Akhir</span>
+        <p class="text-xs font-bold text-slate-900 leading-tight mt-1">Infrastruktur Sosial Digital BUMDes Ketapanrame</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Interactive Data-Binding Script -->
+  <script>
+    const relationMap = {
+      'actor-ketua-bumdes': [
+        'media-wa', 'media-fb', 'media-audiovisual',
+        'comm-info', 'comm-koordinasi', 'comm-promosi',
+        'pattern-vertikal', 'pattern-horizontal', 'pattern-ekonomi',
+        'rep-konten', 'rep-info', 'rep-produk',
+        'vis-publik', 'vis-pasar', 'vis-wisatawan',
+        'downstream-aktivitas', 'downstream-legitimasi',
+        'emp-matrix', 'emp-projectmap', 'emp-crosstab', 'emp-similarity'
+      ],
+      'actor-kades': [
+        'media-wa', 'media-audiovisual',
+        'comm-info', 'comm-koordinasi', 'comm-partisipasi',
+        'pattern-vertikal',
+        'rep-info', 'rep-konten',
+        'vis-publik',
+        'downstream-legitimasi', 'downstream-aktivitas',
+        'emp-matrix', 'emp-evidence', 'emp-crosstab'
+      ],
+      'actor-ketua-kub': [
+        'media-tiktok', 'media-wa', 'media-fb', 'media-audiovisual',
+        'comm-promosi', 'comm-koordinasi', 'comm-partisipasi', 'comm-interaksi',
+        'pattern-horizontal', 'pattern-ekonomi',
+        'rep-konten', 'rep-produk',
+        'vis-publik', 'vis-pasar', 'vis-wisatawan',
+        'downstream-aktivitas', 'downstream-legitimasi',
+        'emp-wordcloud', 'emp-projectmap', 'emp-evidence'
+      ],
+      'actor-admin': [
+        'media-tiktok', 'media-wa', 'media-fb', 'media-audiovisual',
+        'comm-representasi', 'comm-promosi', 'comm-info', 'comm-interaksi', 'comm-partisipasi',
+        'pattern-publik', 'pattern-horizontal',
+        'rep-konten', 'rep-info', 'rep-produk',
+        'vis-publik', 'vis-pasar', 'vis-wisatawan',
+        'downstream-aktivitas', 'downstream-legitimasi',
+        'emp-wordcloud', 'emp-matrix', 'emp-evidence', 'emp-similarity', 'emp-projectmap'
+      ],
+      'actor-tenan': [
+        'media-qris', 'media-wa', 'media-audiovisual',
+        'comm-transaksi', 'comm-promosi', 'comm-interaksi',
+        'pattern-ekonomi',
+        'rep-produk', 'rep-transaksi',
+        'vis-pasar', 'vis-wisatawan',
+        'downstream-aktivitas', 'downstream-legitimasi',
+        'emp-evidence', 'emp-matrix', 'emp-crosstab'
+      ],
+      'media-tiktok': [
+        'actor-ketua-kub', 'actor-admin', 'comm-representasi', 'comm-promosi', 'comm-interaksi',
+        'pattern-publik', 'pattern-horizontal', 'rep-konten', 'rep-produk',
+        'vis-publik', 'vis-pasar', 'vis-wisatawan', 'downstream-aktivitas', 'downstream-legitimasi',
+        'emp-wordcloud', 'emp-evidence', 'emp-projectmap'
+      ],
+      'media-wa': [
+        'actor-ketua-bumdes', 'actor-kades', 'actor-ketua-kub', 'actor-admin', 'actor-tenan',
+        'comm-koordinasi', 'comm-info', 'comm-interaksi', 'pattern-vertikal', 'pattern-horizontal',
+        'pattern-ekonomi', 'rep-info', 'rep-produk', 'vis-publik', 'downstream-aktivitas',
+        'downstream-legitimasi', 'emp-matrix', 'emp-similarity', 'emp-projectmap'
+      ],
+      'media-fb': [
+        'actor-ketua-bumdes', 'actor-ketua-kub', 'actor-admin', 'comm-info', 'comm-promosi',
+        'comm-partisipasi', 'pattern-horizontal', 'pattern-publik', 'rep-info', 'rep-konten',
+        'vis-publik', 'vis-pasar', 'downstream-aktivitas', 'emp-evidence', 'emp-matrix'
+      ],
+      'media-qris': [
+        'actor-tenan', 'actor-ketua-bumdes', 'comm-transaksi', 'pattern-ekonomi', 'rep-transaksi',
+        'vis-pasar', 'vis-wisatawan', 'downstream-aktivitas', 'downstream-legitimasi',
+        'emp-evidence', 'emp-matrix', 'emp-crosstab'
+      ],
+      'media-audiovisual': [
+        'actor-admin', 'actor-ketua-bumdes', 'actor-ketua-kub', 'actor-kades', 'actor-tenan',
+        'comm-representasi', 'comm-promosi', 'pattern-publik', 'rep-konten', 'rep-produk',
+        'vis-publik', 'vis-wisatawan', 'vis-pasar', 'downstream-aktivitas', 'downstream-legitimasi',
+        'emp-wordcloud', 'emp-evidence'
+      ],
+      'comm-info': ['actor-ketua-bumdes', 'actor-kades', 'actor-admin', 'media-wa', 'media-fb', 'pattern-vertikal', 'pattern-horizontal', 'rep-info', 'vis-publik', 'downstream-legitimasi', 'emp-wordcloud', 'emp-matrix'],
+      'comm-koordinasi': ['actor-ketua-bumdes', 'actor-kades', 'actor-ketua-kub', 'media-wa', 'pattern-vertikal', 'pattern-horizontal', 'rep-info', 'vis-publik', 'downstream-legitimasi', 'emp-matrix', 'emp-crosstab'],
+      'comm-promosi': ['actor-ketua-bumdes', 'actor-ketua-kub', 'actor-admin', 'actor-tenan', 'media-tiktok', 'media-fb', 'media-audiovisual', 'pattern-ekonomi', 'pattern-publik', 'rep-konten', 'rep-produk', 'vis-pasar', 'vis-wisatawan', 'vis-publik', 'downstream-aktivitas', 'emp-wordcloud', 'emp-evidence'],
+      'comm-representasi': ['actor-admin', 'actor-ketua-kub', 'media-tiktok', 'media-audiovisual', 'pattern-publik', 'rep-konten', 'vis-publik', 'vis-wisatawan', 'downstream-aktivitas', 'downstream-legitimasi', 'emp-evidence', 'emp-projectmap'],
+      'comm-interaksi': ['actor-admin', 'actor-ketua-kub', 'actor-tenan', 'media-tiktok', 'media-wa', 'pattern-horizontal', 'pattern-ekonomi', 'pattern-publik', 'rep-konten', 'vis-publik', 'downstream-aktivitas', 'emp-similarity'],
+      'comm-partisipasi': ['actor-kades', 'actor-ketua-kub', 'actor-admin', 'media-fb', 'media-wa', 'pattern-horizontal', 'rep-konten', 'rep-info', 'vis-publik', 'downstream-aktivitas', 'downstream-legitimasi', 'emp-matrix', 'emp-projectmap'],
+      'comm-transaksi': ['actor-tenan', 'media-qris', 'pattern-ekonomi', 'rep-transaksi', 'rep-produk', 'vis-pasar', 'downstream-aktivitas', 'downstream-legitimasi', 'emp-evidence', 'emp-crosstab'],
+      'pattern-vertikal': ['actor-kades', 'actor-ketua-bumdes', 'media-wa', 'comm-info', 'comm-koordinasi', 'rep-info', 'vis-publik', 'downstream-legitimasi', 'emp-crosstab', 'emp-matrix'],
+      'pattern-horizontal': ['actor-ketua-bumdes', 'actor-ketua-kub', 'actor-admin', 'media-wa', 'media-fb', 'comm-koordinasi', 'comm-partisipasi', 'comm-interaksi', 'rep-info', 'rep-konten', 'vis-publik', 'downstream-aktivitas', 'emp-similarity', 'emp-projectmap'],
+      'pattern-ekonomi': ['actor-ketua-bumdes', 'actor-ketua-kub', 'actor-tenan', 'media-qris', 'media-wa', 'comm-promosi', 'comm-transaksi', 'rep-produk', 'rep-transaksi', 'vis-pasar', 'vis-wisatawan', 'downstream-aktivitas', 'emp-evidence', 'emp-matrix'],
+      'pattern-publik': ['actor-admin', 'actor-ketua-kub', 'media-tiktok', 'media-fb', 'media-audiovisual', 'comm-representasi', 'comm-promosi', 'comm-interaksi', 'rep-konten', 'rep-info', 'vis-publik', 'vis-pasar', 'vis-wisatawan', 'downstream-aktivitas', 'downstream-legitimasi', 'emp-wordcloud', 'emp-evidence', 'emp-projectmap'],
+      'downstream-aktivitas': ['actor-tenan', 'actor-ketua-kub', 'actor-admin', 'actor-ketua-bumdes', 'media-qris', 'media-tiktok', 'comm-promosi', 'comm-transaksi', 'comm-partisipasi', 'pattern-ekonomi', 'pattern-horizontal', 'vis-pasar', 'vis-wisatawan', 'downstream-legitimasi', 'emp-evidence', 'emp-matrix'],
+      'downstream-legitimasi': ['actor-kades', 'actor-ketua-bumdes', 'actor-admin', 'media-wa', 'comm-info', 'comm-koordinasi', 'pattern-vertikal', 'rep-info', 'vis-publik', 'downstream-aktivitas', 'emp-matrix', 'emp-crosstab', 'emp-similarity']
+    };
+
+    let activeSelectedId = null;
+    const allCards = document.querySelectorAll('.node-card');
+
+    // Initialize history state
+    try {
+      history.replaceState({ selected: null }, '', window.location.pathname);
+    } catch(e){}
+
+    function selectNode(id, fromPopstate = false) {
+      if (activeSelectedId === id) {
+        resetHighlight();
+        return;
+      }
+
+      activeSelectedId = id;
+      document.getElementById('reset-btn').classList.remove('hidden');
+
+      if (!fromPopstate) {
+        try {
+          history.pushState({ selected: id }, '', window.location.pathname + '#' + id);
+        } catch(e){}
+      }
+
+      const related = relationMap[id] || [];
+
+      allCards.forEach(card => {
+        const cardId = card.id;
+        if (cardId === id) {
+          card.classList.add('node-active');
+          card.classList.remove('node-dimmed');
+        } else if (related.includes(cardId)) {
+          card.classList.remove('node-dimmed', 'node-active');
+        } else {
+          card.classList.add('node-dimmed');
+          card.classList.remove('node-active');
+        }
+      });
+    }
+
+    function resetHighlight(fromPopstate = false) {
+      activeSelectedId = null;
+      document.getElementById('reset-btn').classList.add('hidden');
+      allCards.forEach(card => {
+        card.classList.remove('node-dimmed', 'node-active');
+      });
+      if (!fromPopstate) {
+        try {
+          history.pushState({ selected: null }, '', window.location.pathname);
+        } catch(e){}
+      }
+    }
+
+    // Handle Mobile Hardware / Browser Back Button
+    let exitToastTimer = null;
+    window.addEventListener('popstate', function(e) {
+      if (activeSelectedId) {
+        resetHighlight(true);
+        return;
+      }
+
+      // Root state double-back protection on mobile
+      if (exitToastTimer) {
+        clearTimeout(exitToastTimer);
+        exitToastTimer = null;
+      } else {
+        try {
+          history.pushState({ selected: null }, '', window.location.pathname);
+        } catch(err){}
+        showExitToastMessage();
+      }
+    });
+
+    function showExitToastMessage() {
+      let toast = document.getElementById('mobile-exit-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'mobile-exit-toast';
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white text-xs font-medium px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-md border border-slate-700 pointer-events-none transition-opacity duration-300';
+        toast.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-amber-400 mr-2 animate-ping"></span>Tekan tombol kembali sekali lagi untuk keluar';
+        document.body.appendChild(toast);
+      }
+      toast.style.opacity = '1';
+      exitToastTimer = setTimeout(function() {
+        if (toast) toast.style.opacity = '0';
+        exitToastTimer = null;
+      }, 2500);
+    }
+  </script>
+</body>
+</html>

@@ -27,6 +27,7 @@ import { PrintableReportView } from './components/PrintableReportView';
 import { HmmFrameworkModel } from './components/HmmFrameworkModel';
 import { IntegrativeRelationMap } from './components/IntegrativeRelationMap';
 import { DataInputMatrixEditor } from './components/DataInputMatrixEditor';
+import { useMobileBackHandler } from './hooks/useMobileBackHandler';
 import { generateStandaloneHtml } from './utils/generateStandaloneHtml';
 import { exportDashboardToPDF } from './utils/exportPdf';
 import logoImg from './assets/images/bumdes_hmm_logo_1787789361564.jpg';
@@ -44,6 +45,7 @@ import {
   Share2,
   FileText,
   ArrowRight,
+  ArrowLeft,
   Menu,
   GitFork,
   TableProperties,
@@ -55,6 +57,26 @@ export default function App() {
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
+  const [selectedInformantId, setSelectedInformantId] = useState<string | null>(null);
+
+  // Mobile Back Button and History State Manager Hook
+  const {
+    showExitToast,
+    handleGoBack,
+    handleReturnToMainDashboard,
+    isAtMainDashboard,
+  } = useMobileBackHandler({
+    activeTab,
+    setActiveTab,
+    mobileSidebarOpen,
+    setMobileSidebarOpen,
+    profileDrawerOpen,
+    setProfileDrawerOpen,
+    selectedNodeData,
+    setSelectedNodeData,
+    selectedInformantId,
+    setSelectedInformantId,
+  });
 
   // Persistent state for HMM & Project Map Data
   const [hmmSteps, setHmmSteps] = useState<HmmFlowStep[]>(() => {
@@ -123,9 +145,6 @@ export default function App() {
     gender: 'ALL',
     ageGroup: 'ALL',
   });
-
-  // Selected Informant filter
-  const [selectedInformantId, setSelectedInformantId] = useState<string | null>(null);
 
   // Compute active matching informants
   const activeInformants = useMemo(() => {
@@ -232,7 +251,7 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         {/* Top Header Bar */}
         <header className="min-h-14 sm:min-h-16 bg-white border-b border-slate-200 px-3 sm:px-6 py-2.5 sm:py-0 flex items-center justify-between shrink-0 sticky top-0 z-20 shadow-2xs gap-2">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Hamburger Button for Mobile / Tablet */}
             <button
               onClick={() => setMobileSidebarOpen(true)}
@@ -242,6 +261,19 @@ export default function App() {
             >
               <Menu className="w-5 h-5" />
             </button>
+
+            {/* Dynamic Mobile/Desktop Back Button when not on main dashboard */}
+            {activeTab !== 'hmm_flow' && (
+              <button
+                onClick={handleGoBack}
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-700 text-xs font-bold rounded-xl transition cursor-pointer shrink-0 border border-indigo-200 shadow-2xs"
+                title="Kembali ke Dashboard Utama / Halaman Sebelumnya"
+                aria-label="Kembali"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-700" />
+                <span className="hidden sm:inline">Kembali</span>
+              </button>
+            )}
 
             <div className="w-9 h-9 rounded-xl bg-white p-0.5 border border-slate-200 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden">
               <img
@@ -651,14 +683,23 @@ export default function App() {
         </footer>
 
         {/* Mobile Bottom Navigation Bar (< lg screens) */}
-        <div className="lg:hidden fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-30 px-2 py-1.5 flex items-center justify-around text-slate-400 shadow-lg">
+        <div className="lg:hidden fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-30 px-1.5 py-1.5 flex items-center justify-around text-slate-400 shadow-lg">
           <button
-            onClick={() => setActiveTab('network')}
+            onClick={() => setActiveTab('hmm_flow')}
             className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
-              activeTab === 'network' ? 'text-indigo-400 font-bold bg-slate-800' : 'hover:text-white'
+              activeTab === 'hmm_flow' ? 'text-indigo-400 font-bold bg-slate-800' : 'hover:text-white'
             }`}
           >
-            <Network className="w-4 h-4 mb-0.5" />
+            <GitFork className="w-4 h-4 mb-0.5" />
+            <span>Alur HMM</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('project_map')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
+              activeTab === 'project_map' ? 'text-emerald-400 font-bold bg-slate-800' : 'hover:text-white'
+            }`}
+          >
+            <Share2 className="w-4 h-4 mb-0.5" />
             <span>Peta Relasi</span>
           </button>
           <button
@@ -671,18 +712,9 @@ export default function App() {
             <span>Grafik</span>
           </button>
           <button
-            onClick={() => setActiveTab('lexical')}
-            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
-              activeTab === 'lexical' ? 'text-amber-400 font-bold bg-slate-800' : 'hover:text-white'
-            }`}
-          >
-            <Layers className="w-4 h-4 mb-0.5" />
-            <span>Word Cloud</span>
-          </button>
-          <button
             onClick={() => setActiveTab('crosstab')}
             className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
-              activeTab === 'crosstab' ? 'text-emerald-400 font-bold bg-slate-800' : 'hover:text-white'
+              activeTab === 'crosstab' ? 'text-purple-400 font-bold bg-slate-800' : 'hover:text-white'
             }`}
           >
             <TableProperties className="w-4 h-4 mb-0.5" />
@@ -691,7 +723,7 @@ export default function App() {
           <button
             onClick={() => setActiveTab('findings')}
             className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
-              activeTab === 'findings' ? 'text-purple-400 font-bold bg-slate-800' : 'hover:text-white'
+              activeTab === 'findings' ? 'text-amber-400 font-bold bg-slate-800' : 'hover:text-white'
             }`}
           >
             <BookOpen className="w-4 h-4 mb-0.5" />
@@ -699,6 +731,16 @@ export default function App() {
           </button>
         </div>
       </div>
+
+      {/* Mobile Double-Back Exit Confirmation Toast */}
+      {showExitToast && (
+        <div className="fixed bottom-16 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-3 duration-200 pointer-events-none w-auto max-w-[90vw]">
+          <div className="bg-slate-900/95 text-white text-xs font-medium px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-md border border-slate-700 flex items-center gap-2.5 text-center">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
+            <span>Tekan tombol kembali sekali lagi untuk keluar aplikasi</span>
+          </div>
+        </div>
+      )}
 
       {/* Slide-Over Drawer for Informant Profile */}
       {profileDrawerOpen && (

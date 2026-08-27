@@ -545,7 +545,43 @@ export const IntegrativeRelationMap: React.FC<IntegrativeRelationMapProps> = ({
       {/* Main Canvas & Overlay Panels */}
       <div ref={cardWrapperRef} className="relative flex-1 bg-slate-50/50 min-h-[580px] lg:min-h-[660px]">
         {/* Cytoscape Container */}
-        <div ref={containerRef} className="w-full h-[580px] lg:h-[660px] cursor-grab active:cursor-grabbing" />
+        <div
+          ref={containerRef}
+          className="w-full h-[580px] lg:h-[660px] cursor-grab active:cursor-grabbing touch-none"
+        />
+
+        {/* Floating Canvas Quick Zoom Controls (Especially handy on Mobile) */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1 bg-white/95 backdrop-blur-md px-2 py-1.5 rounded-2xl border border-slate-200/90 shadow-md text-xs font-semibold text-slate-700 select-none">
+          <button
+            onClick={() => handleZoom(0.8)}
+            className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition"
+            title="Perkecil (Zoom Out)"
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={handleFit}
+            className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition"
+            title="Paskan ke Layar (Fit View)"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => handleZoom(1.25)}
+            className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition"
+            title="Perbesar (Zoom In)"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+          <div className="w-[1px] h-3.5 bg-slate-200 mx-0.5" />
+          <button
+            onClick={handleResetLayout}
+            className="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition"
+            title="Reset Peta"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
         {/* Legend Box in Canvas (Top Left Floating) */}
         {showLegend && (
