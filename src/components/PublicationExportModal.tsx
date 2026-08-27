@@ -14,7 +14,9 @@ import {
   FileCode2,
   Info,
   CheckCircle2,
+  FileSpreadsheet,
 } from 'lucide-react';
+import { exportFigureToPDF } from '../utils/exportPdf';
 
 export interface PublicationExportModalProps {
   isOpen: boolean;
@@ -40,7 +42,7 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
   getCytoscapeInstance,
 }) => {
   const [resolution, setResolution] = useState<'300dpi' | '600dpi' | '150dpi'>('300dpi');
-  const [format, setFormat] = useState<'png' | 'svg' | 'jpeg'>('png');
+  const [format, setFormat] = useState<'png' | 'pdf' | 'svg' | 'jpeg'>('png');
   const [bgColor, setBgColor] = useState<'white' | 'transparent' | 'soft'>('white');
   const [includeCaptionInImage, setIncludeCaptionInImage] = useState<boolean>(true);
   const [isExporting, setIsExporting] = useState<boolean>(false);
@@ -75,6 +77,21 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
     setIsExporting(true);
 
     try {
+      // Direct PDF Export for Figure
+      if (format === 'pdf') {
+        const cy = getCytoscapeInstance ? getCytoscapeInstance() : null;
+        await exportFigureToPDF({
+          figureNumber,
+          figureTitle,
+          figureCaptionNote,
+          targetElement: targetElementRef?.current,
+          filename: `${defaultFilename}_APA7`,
+          cyInstance: cy,
+        });
+        setIsExporting(false);
+        return;
+      }
+
       // 1. Check if Cytoscape instance is available for direct high-res canvas dump
       const cy = getCytoscapeInstance ? getCytoscapeInstance() : null;
 
@@ -144,7 +161,7 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
       link.click();
     } catch (err) {
       console.error('Export error:', err);
-      alert('Terjadi kesalahan saat memproses gambar resolusi tinggi. Silakan coba lagi.');
+      alert('Terjadi kesalahan saat memproses ekspor. Silakan coba lagi.');
     } finally {
       setIsExporting(false);
     }
@@ -161,10 +178,10 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-base text-white leading-tight">
-                Ekspor Gambar Siap Publikasi Jurnal & Tesis
+                Ekspor Gambar Siap Publikasi Jurnal &amp; Tesis
               </h3>
               <p className="text-xs text-slate-300 mt-0.5">
-                Standar Resolusi Tinggi 300 DPI &bull; Format Takarir APA 7th Edition
+                Standar Resolusi Tinggi 300 DPI &bull; Format Takarir APA 7th Edition &bull; PDF / PNG / SVG
               </p>
             </div>
           </div>
@@ -182,55 +199,76 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
           <div className="space-y-3">
             <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
               <Settings2 className="w-3.5 h-3.5 text-indigo-600" />
-              1. Format Berkas & Resolusi (DPI)
+              1. Format Berkas &amp; Resolusi (DPI)
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {/* Option: 300 DPI */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {/* Option: PNG 300 DPI */}
               <button
                 type="button"
                 onClick={() => {
+                  setFormat('png');
                   setResolution('300dpi');
-                  if (format === 'svg') setFormat('png');
                 }}
                 className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                  resolution === '300dpi' && format !== 'svg'
+                  format === 'png' && resolution === '300dpi'
                     ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20'
                     : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-xs text-emerald-950">300 DPI (Standar)</span>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-semibold">
-                    Rekomendasi
+                  <span className="font-bold text-xs text-emerald-950">PNG 300 DPI</span>
+                  <span className="text-[9.5px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-semibold">
+                    Utama
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 leading-snug">
-                  Optimal untuk naskah Jurnal Sinta/Scopus, Tesis, dan Cetak Buku.
+                <p className="text-[10.5px] text-slate-600 leading-snug">
+                  Optimal naskah Jurnal Sinta/Scopus &amp; Tesis.
                 </p>
               </button>
 
-              {/* Option: 600 DPI */}
+              {/* Option: PDF Document */}
+              <button
+                type="button"
+                onClick={() => setFormat('pdf')}
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                  format === 'pdf'
+                    ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20'
+                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-xs text-blue-950">PDF Dokumen</span>
+                  <span className="text-[9.5px] bg-blue-100 text-blue-800 px-1 py-0.2 rounded font-semibold">
+                    A4 Cetak
+                  </span>
+                </div>
+                <p className="text-[10.5px] text-slate-600 leading-snug">
+                  Dokumen A4 rapi lengkap dengan judul &amp; takarir APA 7.
+                </p>
+              </button>
+
+              {/* Option: PNG 600 DPI */}
               <button
                 type="button"
                 onClick={() => {
+                  setFormat('png');
                   setResolution('600dpi');
-                  if (format === 'svg') setFormat('png');
                 }}
                 className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                  resolution === '600dpi' && format !== 'svg'
+                  format === 'png' && resolution === '600dpi'
                     ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20'
                     : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-xs text-slate-900">600 DPI (Ultra-HD)</span>
-                  <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-semibold">
+                  <span className="font-bold text-xs text-slate-900">PNG 600 DPI</span>
+                  <span className="text-[9.5px] bg-slate-200 text-slate-700 px-1 py-0.2 rounded font-semibold">
                     Ultra
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 leading-snug">
-                  Kerapatan piksel sangat tinggi untuk poster akademik & arsip master.
+                <p className="text-[10.5px] text-slate-600 leading-snug">
+                  Kerapatan piksel sangat tinggi untuk poster akademik.
                 </p>
               </button>
 
@@ -245,57 +283,59 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-xs text-purple-950">SVG (Vektor)</span>
-                  <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded font-semibold">
-                    Scalable
+                  <span className="font-bold text-xs text-purple-950">SVG Vektor</span>
+                  <span className="text-[9.5px] bg-purple-100 text-purple-800 px-1 py-0.2 rounded font-semibold">
+                    Vector
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 leading-snug">
-                  Grafis vektor murni tanpa pecah pada perbesaran tak terbatas.
+                <p className="text-[10.5px] text-slate-600 leading-snug">
+                  Vektor murni tanpa pecah pada perbesaran apapun.
                 </p>
               </button>
             </div>
 
-            {/* Background & Sub-options */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-700">Latar Belakang:</span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setBgColor('white')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer border ${
-                      bgColor === 'white'
-                        ? 'bg-white text-slate-900 border-indigo-500 shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }`}
-                  >
-                    Putih Bersih (#FFF)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBgColor('transparent')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer border ${
-                      bgColor === 'transparent'
-                        ? 'bg-white text-slate-900 border-indigo-500 shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }`}
-                  >
-                    Transparan (PNG)
-                  </button>
+            {/* Background & Sub-options (only if not PDF) */}
+            {format !== 'pdf' && (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-slate-700">Latar Belakang:</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setBgColor('white')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer border ${
+                        bgColor === 'white'
+                          ? 'bg-white text-slate-900 border-indigo-500 shadow-2xs'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}
+                    >
+                      Putih Bersih (#FFF)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBgColor('transparent')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer border ${
+                        bgColor === 'transparent'
+                          ? 'bg-white text-slate-900 border-indigo-500 shadow-2xs'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}
+                    >
+                      Transparan (PNG)
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-medium">
-                <input
-                  type="checkbox"
-                  checked={includeCaptionInImage}
-                  onChange={(e) => setIncludeCaptionInImage(e.target.checked)}
-                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
-                />
-                <span>Sertakan Header Judul Gambar dalam File</span>
-              </label>
-            </div>
+                <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-medium">
+                  <input
+                    type="checkbox"
+                    checked={includeCaptionInImage}
+                    onChange={(e) => setIncludeCaptionInImage(e.target.checked)}
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>Sertakan Header Judul Gambar dalam File</span>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Section 2: Takarir & Sitasi Otomatis (APA 7th Edition & LaTeX) */}
@@ -361,7 +401,7 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
             <span>
               Format berkas:{' '}
               <strong className="text-slate-700 uppercase">
-                {format} ({resolution})
+                {format === 'pdf' ? 'DOKUMEN PDF (A4 LANDSCAPE)' : `${format} (${resolution})`}
               </strong>
             </span>
           </div>
@@ -378,17 +418,23 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
               type="button"
               disabled={isExporting}
               onClick={handleExportDownload}
-              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/20 flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+              className={`px-5 py-2 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-2 transition cursor-pointer disabled:opacity-50 ${
+                format === 'pdf'
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-700/20'
+                  : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-700/20'
+              }`}
             >
               {isExporting ? (
                 <>
                   <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Memproses Resolusi Tinggi...</span>
+                  <span>Memproses Berkas...</span>
                 </>
               ) : (
                 <>
                   <Download className="w-4 h-4" />
-                  <span>Unduh Gambar ({resolution.toUpperCase()})</span>
+                  <span>
+                    Unduh {format === 'pdf' ? 'PDF Dokumen' : `Gambar (${format.toUpperCase()})`}
+                  </span>
                 </>
               )}
             </button>

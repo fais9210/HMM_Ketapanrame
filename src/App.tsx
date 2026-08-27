@@ -341,18 +341,6 @@ export default function App() {
                 <span>Editor</span>
               </button>
             </div>
-
-            {/* Dedicated Green Export Button */}
-            <button
-              id="btn-export-pdf-main"
-              onClick={handleExportPdf}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
-              title="Export Laporan Penelitian BUMDes ke PDF format A4 (html2pdf.js)"
-            >
-              <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Export PDF</span>
-              <span className="sm:hidden">PDF</span>
-            </button>
           </div>
         </header>
 
