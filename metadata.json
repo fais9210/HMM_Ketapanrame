@@ -1,0 +1,6 @@
+{
+  "name": "Hybrid Mediatization Mapping (HMM) BUMDes Ketapanrame",
+  "description": "Dashboard Riset Kualitatif Hybrid Mediatization Mapping (HMM) BUMDes Ketapanrame: Visualisasi Model Alur HMM (Gambar 1), Peta Relasi Integratif Aktor & Tema (Gambar 2), Highlight Path, dan Input Data Interaktif.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
