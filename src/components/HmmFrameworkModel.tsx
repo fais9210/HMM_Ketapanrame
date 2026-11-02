@@ -33,16 +33,23 @@ import {
   Maximize2,
   Minimize2,
   Printer,
-  Sparkles,
   RotateCcw,
-  CheckCircle2,
   Presentation,
   ArrowUpRight,
+  GitBranch,
+  Activity,
+  Quote,
 } from 'lucide-react';
 import { PublicationExportModal } from './PublicationExportModal';
 import { HmmGuidedTour } from './HmmGuidedTour';
 import { ZoomPanWrapper } from './ZoomPanWrapper';
 import { HmmActorId, hmmActorOrder } from '../data/actorRelationsData';
+import {
+  HmmAnimatedFlowOverlay,
+  resolveActiveFlowEdges,
+} from './HmmAnimatedFlowOverlay';
+import { HmmQuotePopover } from './HmmQuotePopover';
+import { getQuoteEvidenceById } from '../data/hmmQuotesData';
 
 export interface NodeItem {
   id: string;
@@ -75,14 +82,26 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [isTourOpen, setIsTourOpen] = useState<boolean>(false);
   const [tourHighlightedNodes, setTourHighlightedNodes] = useState<string[]>([]);
+  const [showFlowLines, setShowFlowLines] = useState<boolean>(true);
+  const [showAmbientAll, setShowAmbientAll] = useState<boolean>(true);
+  const [useEmpiricalWeights, setUseEmpiricalWeights] = useState<boolean>(true);
+  const [enableQuotes, setEnableQuotes] = useState<boolean>(true);
+  const [quotePopover, setQuotePopover] = useState<{
+    kind: 'node' | 'edge';
+    id: string;
+    anchor: { x: number; y: number };
+    isPinned: boolean;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const diagramCaptureRef = useRef<HTMLDivElement>(null);
+  const flowStageRef = useRef<HTMLDivElement>(null);
 
-  // Close modals or fullscreen on ESC key or back
+  // Close modals, pinned quote popover, or fullscreen on ESC key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isTourOpen) setIsTourOpen(false);
+        if (quotePopover) setQuotePopover(null);
+        else if (isTourOpen) setIsTourOpen(false);
         else if (isExportModalOpen) setIsExportModalOpen(false);
         else if (isFullscreen) setIsFullscreen(false);
         else if (selectedNodeId) setSelectedNodeId(null);
@@ -90,7 +109,7 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isTourOpen, isExportModalOpen, isFullscreen, selectedNodeId]);
+  }, [quotePopover, isTourOpen, isExportModalOpen, isFullscreen, selectedNodeId]);
 
   // Mapping of related nodes for interactive data binding
   const relationMap: Record<string, string[]> = {
@@ -326,6 +345,48 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
 
   const activeFocusId = selectedNodeId || hoveredNodeId;
 
+  const flowStats = resolveActiveFlowEdges(
+    activeFocusId,
+    isTourOpen,
+    tourHighlightedNodes,
+    relationMap
+  );
+
+  const actorPinOptions: Array<{
+    id: HmmActorId;
+    shortLabel: string;
+    activeClass: string;
+  }> = [
+    {
+      id: 'actor-ketua-bumdes',
+      shortLabel: 'Ketua BUMDes',
+      activeClass: 'bg-blue-600 border-blue-700 text-white',
+    },
+    {
+      id: 'actor-kades',
+      shortLabel: 'Kepala Desa',
+      activeClass: 'bg-emerald-600 border-emerald-700 text-white',
+    },
+    {
+      id: 'actor-ketua-kub',
+      shortLabel: 'Ketua KUB',
+      activeClass: 'bg-amber-600 border-amber-700 text-white',
+    },
+    {
+      id: 'actor-admin',
+      shortLabel: 'Admin Medsos',
+      activeClass: 'bg-purple-600 border-purple-700 text-white',
+    },
+    {
+      id: 'actor-tenan',
+      shortLabel: 'Tenan Pujasera',
+      activeClass: 'bg-rose-600 border-rose-700 text-white',
+    },
+  ];
+
+  const isPinnedActor =
+    selectedNodeId !== null && hmmActorOrder.includes(selectedNodeId as HmmActorId);
+
   const isHighlighted = (nodeId: string) => {
     // If Guided Tour is active
     if (isTourOpen) {
@@ -339,15 +400,134 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
     return related ? related.includes(nodeId) : false;
   };
 
+  const computeNodeViewportAnchor = (nodeId: string): { x: number; y: number } | null => {
+    const stageEl = flowStageRef.current;
+    const targetEl = stageEl
+      ? stageEl.querySelector(`[id="${nodeId}"]`)
+      : document.getElementById(nodeId);
+    if (!targetEl) return null;
+    const rect = targetEl.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const centerX = rect.left + rect.width / 2;
+    const x =
+      centerX <= vw * 0.56
+        ? Math.min(rect.right - 4, vw * 0.55)
+        : Math.max(rect.left + 4, vw * 0.57);
+    const y = rect.top + rect.height / 2;
+    return { x, y };
+  };
+
+  const handleHoverNodeQuote = (nodeId: string | null) => {
+    if (!enableQuotes || isTourOpen) return;
+    if (!nodeId) {
+      setQuotePopover((prev) => (prev && !prev.isPinned ? null : prev));
+      return;
+    }
+    const anchor = computeNodeViewportAnchor(nodeId);
+    if (!anchor) return;
+    setQuotePopover((prev) => {
+      if (prev?.isPinned) return prev;
+      return { kind: 'node', id: nodeId, anchor, isPinned: false };
+    });
+  };
+
+  const handlePinNodeQuote = (nodeId: string) => {
+    if (!enableQuotes || isTourOpen) return;
+    const anchor = computeNodeViewportAnchor(nodeId);
+    if (!anchor) return;
+    setQuotePopover((prev) => {
+      if (prev?.isPinned && prev.kind === 'node' && prev.id === nodeId) {
+        return null;
+      }
+      return { kind: 'node', id: nodeId, anchor, isPinned: true };
+    });
+  };
+
+  const handleHoverEdgeQuote = (
+    edgeId: string | null,
+    anchorPoint: { x: number; y: number } | null
+  ) => {
+    if (!enableQuotes || isTourOpen) return;
+    if (!edgeId || !anchorPoint) {
+      setQuotePopover((prev) => (prev && !prev.isPinned ? null : prev));
+      return;
+    }
+    setQuotePopover((prev) => {
+      if (prev?.isPinned) return prev;
+      return { kind: 'edge', id: edgeId, anchor: anchorPoint, isPinned: false };
+    });
+  };
+
+  const handleClickEdgeQuote = (edgeId: string, anchorPoint: { x: number; y: number }) => {
+    if (!enableQuotes || isTourOpen) return;
+    setQuotePopover((prev) => {
+      if (prev?.isPinned && prev.kind === 'edge' && prev.id === edgeId) {
+        return null;
+      }
+      return { kind: 'edge', id: edgeId, anchor: anchorPoint, isPinned: true };
+    });
+  };
+
+  const renderNodeQuoteTrigger = (nodeId: string, compactLabel = false) => {
+    if (!enableQuotes) return null;
+    const entry = getQuoteEvidenceById('node', nodeId);
+    if (!entry) return null;
+    const isActiveQuote =
+      quotePopover?.kind === 'node' && quotePopover.id === nodeId;
+
+    return (
+      <button
+        type="button"
+        data-interactive="true"
+        data-quote-trigger="true"
+        onMouseEnter={() => handleHoverNodeQuote(nodeId)}
+        onMouseLeave={() => handleHoverNodeQuote(null)}
+        onClick={(e) => {
+          e.stopPropagation();
+          handlePinNodeQuote(nodeId);
+        }}
+        title={`Lihat ${entry.quotes.length} bukti kutipan langsung informan (${entry.title})`}
+        className={`no-export inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9.5px] font-semibold transition cursor-pointer whitespace-nowrap shrink-0 tabular-nums ${
+          isActiveQuote
+            ? 'bg-slate-900 border-slate-900 text-white shadow-2xs'
+            : 'bg-slate-50/90 border-slate-200/90 text-slate-600 hover:border-slate-400 hover:bg-white hover:text-slate-900'
+        }`}
+      >
+        <Quote className="w-2.5 h-2.5 shrink-0" />
+        <span>{compactLabel ? `Kutipan (${entry.quotes.length})` : entry.quotes.length}</span>
+      </button>
+    );
+  };
+
   const handleNodeClick = (nodeId: string) => {
     if (isTourOpen) return;
     if (hmmActorOrder.includes(nodeId as HmmActorId) && onSelectActorRole) {
+      setQuotePopover(null);
       if (isFullscreen) setIsFullscreen(false);
       onSelectActorRole(nodeId as HmmActorId);
       return;
     }
-    setSelectedNodeId(selectedNodeId === nodeId ? null : nodeId);
+    const nextSelected = selectedNodeId === nodeId ? null : nodeId;
+    setSelectedNodeId(nextSelected);
+
+    if (enableQuotes) {
+      if (nextSelected) {
+        const anchor = computeNodeViewportAnchor(nodeId);
+        if (anchor) {
+          setQuotePopover({ kind: 'node', id: nodeId, anchor, isPinned: true });
+        }
+      } else if (quotePopover?.kind === 'node' && quotePopover.id === nodeId) {
+        setQuotePopover(null);
+      }
+    }
   };
+
+  const activeQuoteEvidence = quotePopover
+    ? getQuoteEvidenceById(quotePopover.kind, quotePopover.id)
+    : null;
+
+  const inspectedEdgeId =
+    quotePopover?.kind === 'edge' ? quotePopover.id : null;
 
   return (
     <div
@@ -372,32 +552,85 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Toggle Animated Flow Overlay */}
+          <button
+            onClick={() => {
+              setShowFlowLines((prev) => {
+                const next = !prev;
+                if (!next && quotePopover?.kind === 'edge') {
+                  setQuotePopover(null);
+                }
+                return next;
+              });
+            }}
+            className={`px-3 py-1.5 rounded-xl border transition cursor-pointer shadow-2xs font-semibold text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+              showFlowLines
+                ? 'bg-sky-600 border-sky-700 text-white'
+                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
+            }`}
+            title="Tampilkan atau sembunyikan visualisasi garis alir dinamis antartahap"
+          >
+            <GitBranch className="w-3.5 h-3.5" />
+            <span>Garis Alir Dinamis</span>
+          </button>
+
+          {showFlowLines && (
+            <button
+              onClick={() => setShowAmbientAll((prev) => !prev)}
+              className="px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer text-xs font-semibold flex items-center gap-1.5 shadow-2xs whitespace-nowrap shrink-0"
+              title="Ubah tampilan antara menampilkan semua alur ekosistem atau hanya saat node disorot"
+            >
+              <Activity className="w-3.5 h-3.5 text-sky-600" />
+              <span>{showAmbientAll ? 'Mode: Semua Alur' : 'Mode: Fokus Sorotan'}</span>
+            </button>
+          )}
+
+          {/* Toggle Interactive Direct Quote Evidence */}
+          <button
+            onClick={() => {
+              setEnableQuotes((prev) => {
+                const next = !prev;
+                if (!next) setQuotePopover(null);
+                return next;
+              });
+            }}
+            className={`px-3 py-1.5 rounded-xl border transition cursor-pointer shadow-2xs font-semibold text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+              enableQuotes
+                ? 'bg-slate-900 border-slate-900 text-white'
+                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
+            }`}
+            title="Aktifkan/nonaktifkan inspeksi bukti kutipan langsung informan pada setiap simpul dan garis alir"
+          >
+            <Quote className="w-3.5 h-3.5" />
+            <span>Bukti Kutipan</span>
+          </button>
+
           {/* Interactive Guided Tour for Sidang/Presentasi */}
           <button
             onClick={() => {
               setSelectedNodeId(null);
+              setQuotePopover(null);
               setIsTourOpen(true);
             }}
-            className={`px-3 py-1.5 rounded-xl border transition cursor-pointer shadow-2xs font-bold text-xs flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl border transition cursor-pointer shadow-2xs font-bold text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               isTourOpen
                 ? 'bg-indigo-600 border-indigo-700 text-white ring-2 ring-indigo-300'
-                : 'border-indigo-300 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 hover:from-indigo-100 hover:to-blue-100 hover:border-indigo-400'
+                : 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-400'
             }`}
             title="Mulai Tur Langkah Interaktif untuk Sidang/Presentasi"
           >
-            <Presentation className="w-3.5 h-3.5 text-indigo-600" />
+            <Presentation className="w-3.5 h-3.5" />
             <span>Tur Presentasi Riset</span>
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-            </span>
           </button>
 
-          {selectedNodeId && (
+          {(selectedNodeId || quotePopover) && (
             <button
-              onClick={() => setSelectedNodeId(null)}
-              className="px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer text-xs font-semibold flex items-center gap-1 shadow-2xs"
+              onClick={() => {
+                setSelectedNodeId(null);
+                setQuotePopover(null);
+              }}
+              className="px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer text-xs font-semibold flex items-center gap-1 shadow-2xs whitespace-nowrap shrink-0"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Sorotan</span>
@@ -405,8 +638,11 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
           )}
 
           <button
-            onClick={() => setIsExportModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition cursor-pointer shadow-2xs font-semibold text-xs flex items-center gap-1.5"
+            onClick={() => {
+              setQuotePopover(null);
+              setIsExportModalOpen(true);
+            }}
+            className="px-3 py-1.5 rounded-xl border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition cursor-pointer shadow-2xs font-semibold text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0"
             title="Ekspor Gambar Publikasi 300 DPI"
           >
             <Printer className="w-3.5 h-3.5 text-blue-600" />
@@ -415,13 +651,111 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
 
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 sm:p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition cursor-pointer shadow-2xs"
+            className="p-1.5 sm:p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition cursor-pointer shadow-2xs shrink-0"
             title={isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh'}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
         </div>
       </div>
+
+      {/* Interactive Path Tracing Bar & Empirical Weight Legend */}
+      {showFlowLines && (
+        <div className="no-export px-3 sm:px-4 py-2 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-600 mr-1 whitespace-nowrap">
+              Lacak Jalur Aktor:
+            </span>
+            <button
+              onClick={() => setSelectedNodeId(null)}
+              disabled={isTourOpen}
+              className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
+                selectedNodeId === null
+                  ? 'bg-slate-800 border-slate-900 text-white'
+                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Semua Ekosistem
+            </button>
+            {actorPinOptions.map((actor) => {
+              const isPinned = selectedNodeId === actor.id;
+              return (
+                <button
+                  key={actor.id}
+                  onClick={() => setSelectedNodeId(isPinned ? null : actor.id)}
+                  disabled={isTourOpen}
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
+                    isPinned
+                      ? actor.activeClass
+                      : 'bg-white border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
+                  }`}
+                >
+                  {actor.shortLabel}
+                </button>
+              );
+            })}
+            {isPinnedActor && enableQuotes && (
+              <button
+                type="button"
+                data-quote-trigger="true"
+                onClick={() => handlePinNodeQuote(selectedNodeId as string)}
+                className="ml-1 px-2.5 py-1 rounded-lg border border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200 text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <Quote className="w-3 h-3 text-sky-700" />
+                <span>Kutipan Aktor</span>
+              </button>
+            )}
+            {isPinnedActor && onSelectActorRole && (
+              <button
+                onClick={() => {
+                  setQuotePopover(null);
+                  if (isFullscreen) setIsFullscreen(false);
+                  onSelectActorRole(selectedNodeId as HmmActorId);
+                }}
+                className="px-2.5 py-1 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <span>Buka Halaman Relasi</span>
+                <ArrowUpRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-600">
+            <button
+              onClick={() => setUseEmpiricalWeights((prev) => !prev)}
+              className={`px-2 py-0.5 rounded-md border text-[10.5px] font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
+                useEmpiricalWeights
+                  ? 'border-sky-300 bg-sky-50 text-sky-800'
+                  : 'border-slate-200 bg-slate-50 text-slate-500'
+              }`}
+              title="Aktifkan skala ketebalan garis berdasarkan konsensus informan NVivo"
+            >
+              Bobot Empiris: {useEmpiricalWeights ? 'Aktif' : 'Seragam'}
+            </button>
+
+            {useEmpiricalWeights && (
+              <div className="hidden xl:flex items-center gap-2.5 border-l border-slate-200 pl-3 tabular-nums">
+                <span className="flex items-center gap-1 text-slate-500">
+                  <span className="w-3.5 h-[1.5px] bg-slate-500 inline-block rounded-full" />
+                  <span>3/5</span>
+                </span>
+                <span className="flex items-center gap-1 text-slate-600">
+                  <span className="w-3.5 h-[2.5px] bg-slate-700 inline-block rounded-full" />
+                  <span>4/5</span>
+                </span>
+                <span className="flex items-center gap-1 text-slate-800 font-semibold">
+                  <span className="w-3.5 h-[3.5px] bg-blue-600 inline-block rounded-full" />
+                  <span>5/5 informan</span>
+                </span>
+              </div>
+            )}
+
+            <div className="border-l border-slate-200 pl-3 font-semibold text-slate-700 tabular-nums whitespace-nowrap">
+              {flowStats.activeCount} jalur {flowStats.hasFocus ? 'tersorot' : 'terpetakan'} &middot; Konsensus {flowStats.avgConsensus}/5
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Infographic Canvas Container with Pinch-to-Zoom, Pan, and Horizontal Scroll */}
       <ZoomPanWrapper
@@ -433,7 +767,7 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
       >
         <div
           ref={diagramCaptureRef}
-          className="min-w-[1180px] max-w-[1360px] mx-auto bg-white p-5 sm:p-7 rounded-2xl border border-slate-300 shadow-md space-y-4 font-sans select-none"
+          className="min-w-[1200px] max-w-[1380px] mx-auto bg-white p-5 sm:p-7 rounded-2xl border border-slate-300 shadow-md space-y-4 font-sans select-none"
         >
           {/* 1. Header Section */}
           <div className="text-center pb-2 border-b border-slate-200">
@@ -445,25 +779,58 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
             </p>
           </div>
 
-          {/* 2. Top Feedback Loop Banner & Dashed Line */}
-          <div className="relative py-2">
-            <div className="flex items-center justify-between border-2 border-dashed border-blue-500 bg-blue-50/90 rounded-xl px-4 py-2 text-xs font-semibold text-blue-900 shadow-2xs">
-              <div className="flex items-center gap-2">
-                <span className="bg-blue-600 text-white text-[10px] uppercase font-extrabold px-2 py-0.5 rounded tracking-wider">
-                  FEEDBACK LOOP
-                </span>
-                <span>
-                  <strong>FEEDBACK:</strong> Trust, legitimasi, dan pengalaman sosial-ekonomi kembali memengaruhi praktik komunikasi dan konten berikutnya
-                </span>
-              </div>
-              <div className="flex items-center text-blue-700 font-bold text-xs gap-1">
-                <span>Tahap 8 &rarr; Tahap 3</span>
+          {/* Interactive Flow Stage Wrapper (Feedback Banner + 6-Column Grid + Animated SVG Overlay) */}
+          <div ref={flowStageRef} className="relative space-y-4">
+            {showFlowLines && (
+              <HmmAnimatedFlowOverlay
+                stageContainerRef={flowStageRef}
+                activeFocusId={activeFocusId}
+                isTourOpen={isTourOpen}
+                tourHighlightedNodes={tourHighlightedNodes}
+                relationMap={relationMap}
+                showAmbientAll={showAmbientAll}
+                useEmpiricalWeights={useEmpiricalWeights}
+                enableEdgeQuotes={enableQuotes}
+                inspectedEdgeId={inspectedEdgeId}
+                onHoverEdge={handleHoverEdgeQuote}
+                onClickEdge={handleClickEdgeQuote}
+              />
+            )}
+
+            {/* 2. Top Feedback Loop Banner & Dashed Line */}
+            <div className="relative py-1.5 z-10">
+              <div
+                id="hmm-feedback-banner"
+                role="button"
+                tabIndex={0}
+                data-interactive="true"
+                data-quote-trigger="true"
+                onClick={() => handlePinNodeQuote('hmm-feedback-banner')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handlePinNodeQuote('hmm-feedback-banner');
+                  }
+                }}
+                className="flex items-center justify-between gap-3 border-2 border-dashed border-blue-500 bg-blue-50/95 hover:bg-blue-100/70 rounded-xl px-4 py-2 text-xs font-semibold text-blue-900 shadow-2xs cursor-pointer transition"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="bg-blue-600 text-white text-[10px] uppercase font-extrabold px-2 py-0.5 rounded tracking-wider shrink-0">
+                    FEEDBACK LOOP
+                  </span>
+                  <span className="leading-snug">
+                    <strong>FEEDBACK:</strong> Trust, legitimasi, dan pengalaman sosial-ekonomi kembali memengaruhi praktik komunikasi dan konten berikutnya
+                  </span>
+                </div>
+                <div className="flex items-center text-blue-700 font-bold text-xs gap-2 tabular-nums whitespace-nowrap shrink-0">
+                  {renderNodeQuoteTrigger('hmm-feedback-banner', true)}
+                  <span>Tahap 8 &rarr; Tahap 3</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* 3. Main Grid Section (6 Columns + Downstream on right side) */}
-          <div className="grid grid-cols-12 gap-3 items-start">
+            {/* 3. Main Grid Section (6 Columns + Downstream on right side) */}
+            <div className="grid grid-cols-12 gap-3.5 items-start relative z-10">
             {/* Kolom 1: Peran Aktor (grid 2 cols) */}
             <div className="col-span-2 space-y-2">
               <div
@@ -529,9 +896,9 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug border-t border-slate-100 pt-1.5">
                     <strong>Fungsi:</strong> koordinasi, pengambilan keputusan, informasi, promosi
                   </p>
-                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-blue-700 flex items-center justify-between">
-                    <span>Buka halaman relasi</span>
-                    <span>&rarr;</span>
+                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-blue-700 flex items-center justify-between gap-1.5">
+                    {renderNodeQuoteTrigger('actor-ketua-bumdes', true)}
+                    <span className="whitespace-nowrap">Buka relasi &rarr;</span>
                   </div>
                 </div>
 
@@ -571,9 +938,9 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug border-t border-slate-100 pt-1.5">
                     <strong>Fungsi:</strong> legitimasi, dukungan kelembagaan, koordinasi
                   </p>
-                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-emerald-700 flex items-center justify-between">
-                    <span>Buka halaman relasi</span>
-                    <span>&rarr;</span>
+                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-emerald-700 flex items-center justify-between gap-1.5">
+                    {renderNodeQuoteTrigger('actor-kades', true)}
+                    <span className="whitespace-nowrap">Buka relasi &rarr;</span>
                   </div>
                 </div>
 
@@ -613,9 +980,9 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug border-t border-slate-100 pt-1.5">
                     <strong>Fungsi:</strong> koordinasi kelompok, promosi, partisipasi
                   </p>
-                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-amber-700 flex items-center justify-between">
-                    <span>Buka halaman relasi</span>
-                    <span>&rarr;</span>
+                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-amber-700 flex items-center justify-between gap-1.5">
+                    {renderNodeQuoteTrigger('actor-ketua-kub', true)}
+                    <span className="whitespace-nowrap">Buka relasi &rarr;</span>
                   </div>
                 </div>
 
@@ -655,9 +1022,9 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug border-t border-slate-100 pt-1.5">
                     <strong>Fungsi:</strong> produksi konten, distribusi informasi, pengelolaan platform
                   </p>
-                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-purple-700 flex items-center justify-between">
-                    <span>Buka halaman relasi</span>
-                    <span>&rarr;</span>
+                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-purple-700 flex items-center justify-between gap-1.5">
+                    {renderNodeQuoteTrigger('actor-admin', true)}
+                    <span className="whitespace-nowrap">Buka relasi &rarr;</span>
                   </div>
                 </div>
 
@@ -697,9 +1064,9 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug border-t border-slate-100 pt-1.5">
                     <strong>Fungsi:</strong> promosi produk, transaksi, interaksi pelanggan
                   </p>
-                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-rose-700 flex items-center justify-between">
-                    <span>Buka halaman relasi</span>
-                    <span>&rarr;</span>
+                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-rose-700 flex items-center justify-between gap-1.5">
+                    {renderNodeQuoteTrigger('actor-tenan', true)}
+                    <span className="whitespace-nowrap">Buka relasi &rarr;</span>
                   </div>
                 </div>
               </div>
@@ -718,6 +1085,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 2.1 TikTok BUMDes & TikTok KUB */}
                 <div
                   id="media-tiktok"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('media-tiktok')}
                   onMouseEnter={() => setHoveredNodeId('media-tiktok')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -727,13 +1096,16 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'media-tiktok' ? 'ring-2 ring-slate-900 bg-slate-50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-xl bg-black text-white flex items-center justify-center font-bold text-[11px] shrink-0 shadow-2xs">
-                      <span className="font-black text-cyan-400">d</span>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-xl bg-black text-white flex items-center justify-center font-bold text-[11px] shrink-0 shadow-2xs">
+                        <span className="font-black text-cyan-400">d</span>
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 leading-tight">TikTok BUMDes & KUB</h4>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-slate-900 leading-tight">TikTok BUMDes & KUB</h4>
-                    </div>
+                    {renderNodeQuoteTrigger('media-tiktok')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
                     <strong>Fungsi:</strong> representasi, storytelling, promosi aktivitas & produk
@@ -743,6 +1115,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 2.2 WhatsApp */}
                 <div
                   id="media-wa"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('media-wa')}
                   onMouseEnter={() => setHoveredNodeId('media-wa')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -752,13 +1126,16 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'media-wa' ? 'ring-2 ring-emerald-600 bg-emerald-50/50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-                      <MessageCircle className="w-4 h-4" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                        <MessageCircle className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 leading-tight">WhatsApp</h4>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-slate-900 leading-tight">WhatsApp</h4>
-                    </div>
+                    {renderNodeQuoteTrigger('media-wa')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
                     <strong>Fungsi:</strong> koordinasi, komunikasi interpersonal dan kelompok
@@ -768,6 +1145,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 2.3 Facebook */}
                 <div
                   id="media-fb"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('media-fb')}
                   onMouseEnter={() => setHoveredNodeId('media-fb')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -777,13 +1156,16 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'media-fb' ? 'ring-2 ring-blue-600 bg-blue-50/50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-                      f
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                        f
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 leading-tight">Facebook</h4>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Facebook</h4>
-                    </div>
+                    {renderNodeQuoteTrigger('media-fb')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
                     <strong>Fungsi:</strong> distribusi informasi, jejaring komunitas
@@ -793,6 +1175,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 2.4 QRIS */}
                 <div
                   id="media-qris"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('media-qris')}
                   onMouseEnter={() => setHoveredNodeId('media-qris')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -802,13 +1186,16 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'media-qris' ? 'ring-2 ring-slate-900 bg-slate-50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-[10px] shrink-0 shadow-2xs">
-                      QRIS
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-[10px] shrink-0 shadow-2xs">
+                        QRIS
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 leading-tight">QRIS</h4>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-slate-900 leading-tight">QRIS</h4>
-                    </div>
+                    {renderNodeQuoteTrigger('media-qris')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
                     <strong>Fungsi:</strong> pembayaran digital, mendukung transaksi ekonomi
@@ -818,6 +1205,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 2.5 Konten Audio-Visual */}
                 <div
                   id="media-audiovisual"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('media-audiovisual')}
                   onMouseEnter={() => setHoveredNodeId('media-audiovisual')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -827,14 +1216,17 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'media-audiovisual' ? 'ring-2 ring-sky-600 bg-sky-50/50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-xl bg-slate-800 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                      <Camera className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-xl bg-slate-800 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                        <Camera className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 leading-tight">Konten Audio-Visual</h4>
+                        <p className="text-[9.5px] text-slate-500 font-medium">(Foto/Video)</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Konten Audio-Visual</h4>
-                      <p className="text-[9.5px] text-slate-500 font-medium">(Foto/Video)</p>
-                    </div>
+                    {renderNodeQuoteTrigger('media-audiovisual')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
                     <strong>Fungsi:</strong> produksi representasi digital aktivitas & destinasi
@@ -845,7 +1237,10 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
 
             {/* Kolom 3: Praktik Komunikasi (grid 2 cols) */}
             <div className="col-span-2 space-y-2">
-              <div className="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center">
+              <div
+                id="hmm-col3-header"
+                className="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center"
+              >
                 <h3 className="font-extrabold text-xs text-sky-950 uppercase tracking-tight">
                   3. PRAKTIK KOMUNIKASI
                 </h3>
@@ -856,6 +1251,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 3.1 Informasi */}
                 <div
                   id="comm-info"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('comm-info')}
                   onMouseEnter={() => setHoveredNodeId('comm-info')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -865,11 +1262,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'comm-info' ? 'ring-2 ring-amber-600 bg-amber-50' : ''}`}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
-                      <Info className="w-3 h-3" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
+                        <Info className="w-3 h-3" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900">Informasi</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900">Informasi</h4>
+                    {renderNodeQuoteTrigger('comm-info')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1 leading-snug">
                     Menginformasikan kegiatan, layanan, produk, kebijakan, edukasi masyarakat
@@ -879,6 +1279,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 3.2 Koordinasi */}
                 <div
                   id="comm-koordinasi"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('comm-koordinasi')}
                   onMouseEnter={() => setHoveredNodeId('comm-koordinasi')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -888,11 +1290,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'comm-koordinasi' ? 'ring-2 ring-amber-600 bg-amber-50' : ''}`}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
-                      <PenTool className="w-3 h-3" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
+                        <PenTool className="w-3 h-3" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900">Koordinasi</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900">Koordinasi</h4>
+                    {renderNodeQuoteTrigger('comm-koordinasi')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1 leading-snug">
                     Mengatur kegiatan, menyampaikan keputusan, koordinasi antaraktor dan kelompok
@@ -902,6 +1307,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 3.3 Promosi */}
                 <div
                   id="comm-promosi"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('comm-promosi')}
                   onMouseEnter={() => setHoveredNodeId('comm-promosi')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -911,11 +1318,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'comm-promosi' ? 'ring-2 ring-amber-600 bg-amber-50' : ''}`}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
-                      <Megaphone className="w-3 h-3" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
+                        <Megaphone className="w-3 h-3" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900">Promosi</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900">Promosi</h4>
+                    {renderNodeQuoteTrigger('comm-promosi')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1 leading-snug">
                     Mempromosikan destinasi, produk, acara, program komunitas
@@ -925,6 +1335,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 3.4 Representasi */}
                 <div
                   id="comm-representasi"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('comm-representasi')}
                   onMouseEnter={() => setHoveredNodeId('comm-representasi')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -934,11 +1346,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'comm-representasi' ? 'ring-2 ring-amber-600 bg-amber-50' : ''}`}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
-                      <MonitorPlay className="w-3 h-3" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
+                        <MonitorPlay className="w-3 h-3" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900">Representasi</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900">Representasi</h4>
+                    {renderNodeQuoteTrigger('comm-representasi')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1 leading-snug">
                     Mengubah aktivitas nyata menjadi konten digital (foto, video, cerita, testimoni)
@@ -948,6 +1363,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 3.5 Interaksi */}
                 <div
                   id="comm-interaksi"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('comm-interaksi')}
                   onMouseEnter={() => setHoveredNodeId('comm-interaksi')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -957,11 +1374,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'comm-interaksi' ? 'ring-2 ring-amber-600 bg-amber-50' : ''}`}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
-                      <MessageCircle className="w-3 h-3" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
+                        <MessageCircle className="w-3 h-3" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900">Interaksi</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900">Interaksi</h4>
+                    {renderNodeQuoteTrigger('comm-interaksi')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1 leading-snug">
                     Merespons, berkomentar, diskusi, memberi feedback, membangun komunikasi dua arah
@@ -971,6 +1391,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 3.6 Partisipasi */}
                 <div
                   id="comm-partisipasi"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('comm-partisipasi')}
                   onMouseEnter={() => setHoveredNodeId('comm-partisipasi')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -980,11 +1402,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'comm-partisipasi' ? 'ring-2 ring-amber-600 bg-amber-50' : ''}`}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
-                      <UserCheck className="w-3 h-3" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
+                        <UserCheck className="w-3 h-3" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900">Partisipasi</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900">Partisipasi</h4>
+                    {renderNodeQuoteTrigger('comm-partisipasi')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1 leading-snug">
                     Mengajak masyarakat terlibat, relawan, dukungan, kolaborasi
@@ -994,6 +1419,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 3.7 Transaksi */}
                 <div
                   id="comm-transaksi"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('comm-transaksi')}
                   onMouseEnter={() => setHoveredNodeId('comm-transaksi')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -1003,11 +1430,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'comm-transaksi' ? 'ring-2 ring-amber-600 bg-amber-50' : ''}`}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
-                      <ShoppingCart className="w-3 h-3" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
+                        <ShoppingCart className="w-3 h-3" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900">Transaksi</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900">Transaksi</h4>
+                    {renderNodeQuoteTrigger('comm-transaksi')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1 leading-snug">
                     Menghubungkan komunikasi produk dengan pembayaran digital (QRIS)
@@ -1029,6 +1459,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 4.1 Vertikal-Institusional */}
                 <div
                   id="pattern-vertikal"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('pattern-vertikal')}
                   onMouseEnter={() => setHoveredNodeId('pattern-vertikal')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -1038,11 +1470,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'pattern-vertikal' ? 'ring-2 ring-emerald-600 bg-emerald-50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                      <Building2 className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                        <Building2 className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Vertikal-Institusional</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900 leading-tight">Vertikal-Institusional</h4>
+                    {renderNodeQuoteTrigger('pattern-vertikal')}
                   </div>
                   <p className="text-[9.5px] text-slate-700 mt-1.5 leading-snug font-medium">
                     Kepala Desa &larr;&rarr; Ketua BUMDes
@@ -1055,6 +1490,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 4.2 Horizontal-Komunitas */}
                 <div
                   id="pattern-horizontal"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('pattern-horizontal')}
                   onMouseEnter={() => setHoveredNodeId('pattern-horizontal')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -1064,11 +1501,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'pattern-horizontal' ? 'ring-2 ring-emerald-600 bg-emerald-50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                      <Users className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                        <Users className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Horizontal-Komunitas</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900 leading-tight">Horizontal-Komunitas</h4>
+                    {renderNodeQuoteTrigger('pattern-horizontal')}
                   </div>
                   <p className="text-[9.5px] text-slate-700 mt-1.5 leading-snug font-medium">
                     BUMDes &larr;&rarr; KUB &larr;&rarr; Admin &larr;&rarr; Anggota/Komunitas
@@ -1081,6 +1521,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 4.3 Ekonomi */}
                 <div
                   id="pattern-ekonomi"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('pattern-ekonomi')}
                   onMouseEnter={() => setHoveredNodeId('pattern-ekonomi')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -1090,11 +1532,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'pattern-ekonomi' ? 'ring-2 ring-emerald-600 bg-emerald-50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                      <ShoppingBag className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Ekonomi</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900 leading-tight">Ekonomi</h4>
+                    {renderNodeQuoteTrigger('pattern-ekonomi')}
                   </div>
                   <p className="text-[9.5px] text-slate-700 mt-1.5 leading-snug font-medium">
                     BUMDes/KUB &rarr; Tenan &rarr; Konsumen
@@ -1107,6 +1552,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 4.4 Publik-Digital */}
                 <div
                   id="pattern-publik"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('pattern-publik')}
                   onMouseEnter={() => setHoveredNodeId('pattern-publik')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -1116,11 +1563,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'pattern-publik' ? 'ring-2 ring-emerald-600 bg-emerald-50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                      <Globe className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                        <Globe className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Publik-Digital</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900 leading-tight">Publik-Digital</h4>
+                    {renderNodeQuoteTrigger('pattern-publik')}
                   </div>
                   <p className="text-[9.5px] text-slate-700 mt-1.5 leading-snug font-medium">
                     Aktor komunitas/Admin &rarr; Platform &rarr; Masyarakat luas
@@ -1145,6 +1595,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 5.1 Konten Digital */}
                 <div
                   id="rep-konten"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('rep-konten')}
                   onMouseEnter={() => setHoveredNodeId('rep-konten')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -1154,11 +1606,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'rep-konten' ? 'ring-2 ring-slate-800 bg-slate-100' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0">
-                      <Film className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0">
+                        <Film className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Konten Digital</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900 leading-tight">Konten Digital</h4>
+                    {renderNodeQuoteTrigger('rep-konten')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
                     Video promosi, kegiatan, edukasi, testimoni
@@ -1168,6 +1623,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 5.2 Informasi Digital */}
                 <div
                   id="rep-info"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('rep-info')}
                   onMouseEnter={() => setHoveredNodeId('rep-info')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -1177,11 +1634,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'rep-info' ? 'ring-2 ring-slate-800 bg-slate-100' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0">
-                      <FileText className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0">
+                        <FileText className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Informasi Digital</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900 leading-tight">Informasi Digital</h4>
+                    {renderNodeQuoteTrigger('rep-info')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
                     Pengumuman, layanan, aksesibilitas informasi
@@ -1191,6 +1651,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 5.3 Produk Digital */}
                 <div
                   id="rep-produk"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('rep-produk')}
                   onMouseEnter={() => setHoveredNodeId('rep-produk')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -1200,11 +1662,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'rep-produk' ? 'ring-2 ring-slate-800 bg-slate-100' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0">
-                      <Box className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0">
+                        <Box className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Produk Digital</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900 leading-tight">Produk Digital</h4>
+                    {renderNodeQuoteTrigger('rep-produk')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
                     Katalog produk, paket wisata, menu, promo digital
@@ -1214,6 +1679,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 5.4 Transaksi Digital */}
                 <div
                   id="rep-transaksi"
+                  data-interactive="true"
+                  data-quote-trigger="true"
                   onClick={() => handleNodeClick('rep-transaksi')}
                   onMouseEnter={() => setHoveredNodeId('rep-transaksi')}
                   onMouseLeave={() => setHoveredNodeId(null)}
@@ -1223,11 +1690,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'rep-transaksi' ? 'ring-2 ring-slate-800 bg-slate-100' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0">
-                      <QrCode className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0">
+                        <QrCode className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Transaksi Digital</h4>
                     </div>
-                    <h4 className="font-bold text-xs text-slate-900 leading-tight">Transaksi Digital</h4>
+                    {renderNodeQuoteTrigger('rep-transaksi')}
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug">
                     Pembayaran digital (QRIS), bukti pembayaran, konfirmasi
@@ -1240,7 +1710,10 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
             <div className="col-span-2 space-y-3">
               {/* Kolom 6: Visibility & Jangkauan */}
               <div className="space-y-2">
-                <div className="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center">
+                <div
+                  id="hmm-col6-header"
+                  className="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center"
+                >
                   <h3 className="font-extrabold text-[11px] text-sky-950 uppercase tracking-tight leading-tight">
                     6. VISIBILITY & JANGKAUAN
                   </h3>
@@ -1251,6 +1724,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                   {/* 6.1 Visibilitas Publik */}
                   <div
                     id="vis-publik"
+                    data-interactive="true"
+                    data-quote-trigger="true"
                     onClick={() => handleNodeClick('vis-publik')}
                     onMouseEnter={() => setHoveredNodeId('vis-publik')}
                     onMouseLeave={() => setHoveredNodeId(null)}
@@ -1260,11 +1735,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                         : 'opacity-30 bg-slate-50 border-slate-200'
                     } ${selectedNodeId === 'vis-publik' ? 'ring-2 ring-purple-600 bg-purple-50' : ''}`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-md bg-purple-600 text-white flex items-center justify-center shrink-0">
-                        <Users className="w-3 h-3" />
+                    <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-5 h-5 rounded-md bg-purple-600 text-white flex items-center justify-center shrink-0">
+                          <Users className="w-3 h-3" />
+                        </div>
+                        <h4 className="font-bold text-xs text-slate-900">Visibilitas Publik</h4>
                       </div>
-                      <h4 className="font-bold text-xs text-slate-900">Visibilitas Publik</h4>
+                      {renderNodeQuoteTrigger('vis-publik')}
                     </div>
                     <p className="text-[9.5px] text-slate-600 mt-1 leading-snug">
                       Konten dilihat lebih luas di luar komunitas lokal
@@ -1274,6 +1752,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                   {/* 6.2 Jangkauan Pasar */}
                   <div
                     id="vis-pasar"
+                    data-interactive="true"
+                    data-quote-trigger="true"
                     onClick={() => handleNodeClick('vis-pasar')}
                     onMouseEnter={() => setHoveredNodeId('vis-pasar')}
                     onMouseLeave={() => setHoveredNodeId(null)}
@@ -1283,11 +1763,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                         : 'opacity-30 bg-slate-50 border-slate-200'
                     } ${selectedNodeId === 'vis-pasar' ? 'ring-2 ring-purple-600 bg-purple-50' : ''}`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-md bg-purple-600 text-white flex items-center justify-center shrink-0">
-                        <TrendingUp className="w-3 h-3" />
+                    <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-5 h-5 rounded-md bg-purple-600 text-white flex items-center justify-center shrink-0">
+                          <TrendingUp className="w-3 h-3" />
+                        </div>
+                        <h4 className="font-bold text-xs text-slate-900">Jangkauan Pasar</h4>
                       </div>
-                      <h4 className="font-bold text-xs text-slate-900">Jangkauan Pasar</h4>
+                      {renderNodeQuoteTrigger('vis-pasar')}
                     </div>
                     <p className="text-[9.5px] text-slate-600 mt-1 leading-snug">
                       Pasar lokal &rarr; regional &rarr; potensial nasional
@@ -1297,6 +1780,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                   {/* 6.3 Jangkauan Wisatawan */}
                   <div
                     id="vis-wisatawan"
+                    data-interactive="true"
+                    data-quote-trigger="true"
                     onClick={() => handleNodeClick('vis-wisatawan')}
                     onMouseEnter={() => setHoveredNodeId('vis-wisatawan')}
                     onMouseLeave={() => setHoveredNodeId(null)}
@@ -1306,11 +1791,14 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                         : 'opacity-30 bg-slate-50 border-slate-200'
                     } ${selectedNodeId === 'vis-wisatawan' ? 'ring-2 ring-purple-600 bg-purple-50' : ''}`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-md bg-purple-600 text-white flex items-center justify-center shrink-0">
-                        <MapPin className="w-3 h-3" />
+                    <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-5 h-5 rounded-md bg-purple-600 text-white flex items-center justify-center shrink-0">
+                          <MapPin className="w-3 h-3" />
+                        </div>
+                        <h4 className="font-bold text-xs text-slate-900">Jangkauan Wisatawan</h4>
                       </div>
-                      <h4 className="font-bold text-xs text-slate-900">Jangkauan Wisatawan</h4>
+                      {renderNodeQuoteTrigger('vis-wisatawan')}
                     </div>
                     <p className="text-[9.5px] text-slate-600 mt-1 leading-snug">
                       Informasi destinasi lebih mudah diakses
@@ -1322,6 +1810,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
               {/* 7. AKTIVITAS SOSIAL-EKONOMI */}
               <div
                 id="downstream-aktivitas"
+                data-interactive="true"
+                data-quote-trigger="true"
                 onClick={() => handleNodeClick('downstream-aktivitas')}
                 onMouseEnter={() => setHoveredNodeId('downstream-aktivitas')}
                 onMouseLeave={() => setHoveredNodeId(null)}
@@ -1331,10 +1821,13 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                     : 'opacity-30 bg-slate-50 border-slate-200'
                 } ${selectedNodeId === 'downstream-aktivitas' ? 'ring-2 ring-pink-600' : ''}`}
               >
-                <h3 className="font-extrabold text-[10px] text-pink-950 uppercase tracking-tight text-center">
-                  7. AKTIVITAS SOSIAL-EKONOMI
-                </h3>
-                <p className="text-[9px] text-pink-800 text-center font-medium mb-1.5">
+                <div className="flex items-center justify-between gap-1 mb-0.5">
+                  <h3 className="font-extrabold text-[10px] text-pink-950 uppercase tracking-tight">
+                    7. AKTIVITAS SOSIAL-EKONOMI
+                  </h3>
+                  {renderNodeQuoteTrigger('downstream-aktivitas')}
+                </div>
+                <p className="text-[9px] text-pink-800 font-medium mb-1.5">
                   (Social-Economic Activities)
                 </p>
 
@@ -1363,6 +1856,8 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
               {/* 8. KEPERCAYAAN & LEGITIMASI */}
               <div
                 id="downstream-legitimasi"
+                data-interactive="true"
+                data-quote-trigger="true"
                 onClick={() => handleNodeClick('downstream-legitimasi')}
                 onMouseEnter={() => setHoveredNodeId('downstream-legitimasi')}
                 onMouseLeave={() => setHoveredNodeId(null)}
@@ -1372,10 +1867,13 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                     : 'opacity-30 bg-slate-50 border-slate-200'
                 } ${selectedNodeId === 'downstream-legitimasi' ? 'ring-2 ring-rose-600' : ''}`}
               >
-                <h3 className="font-extrabold text-[10px] text-rose-950 uppercase tracking-tight text-center">
-                  8. KEPERCAYAAN & LEGITIMASI
-                </h3>
-                <p className="text-[9px] text-rose-800 text-center font-medium mb-1.5">
+                <div className="flex items-center justify-between gap-1 mb-0.5">
+                  <h3 className="font-extrabold text-[10px] text-rose-950 uppercase tracking-tight">
+                    8. KEPERCAYAAN & LEGITIMASI
+                  </h3>
+                  {renderNodeQuoteTrigger('downstream-legitimasi')}
+                </div>
+                <p className="text-[9px] text-rose-800 font-medium mb-1.5">
                   (Trust & Legitimacy)
                 </p>
 
@@ -1401,6 +1899,7 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 </div>
               </div>
             </div>
+            </div>
           </div>
 
           {/* 4. Empirical Evidence Section (Hidden per user request) */}
@@ -1411,11 +1910,15 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
             <div className="col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] space-y-1.5">
               <span className="font-bold text-slate-900 block">Keterangan:</span>
               <div className="flex items-center gap-2 text-slate-700">
-                <span className="w-4 h-0.5 bg-slate-900 inline-block"></span>
-                <span>Alur utama mediatization</span>
+                <span className="w-4 h-0.5 bg-slate-900 inline-block shrink-0"></span>
+                <span>Alur utama mediatisasi</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-700 tabular-nums">
+                <span className="w-4 h-1 bg-blue-600 inline-block rounded-full shrink-0"></span>
+                <span>Tebal = konsensus (3–5/5)</span>
               </div>
               <div className="flex items-center gap-2 text-blue-700">
-                <span className="w-4 h-0.5 border-b-2 border-dashed border-blue-600 inline-block"></span>
+                <span className="w-4 h-0.5 border-b-2 border-dashed border-blue-600 inline-block shrink-0"></span>
                 <span>Umpan balik (feedback)</span>
               </div>
             </div>
@@ -1463,6 +1966,23 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
         figureCaptionNote="Model alur 6 kolom mediatisasi hibrida yang menghubungkan peran aktor, infrastruktur digital media/platform, praktik komunikasi, pola interaksi, representasi digital, visibility/jangkauan, aktivitas sosial-ekonomi, dan muara legitimasi/kepercayaan."
         defaultFilename="Gambar_1_Model_Hybrid_Mediatization_Mapping_HMM"
         targetElementRef={diagramCaptureRef}
+      />
+
+      {/* Interactive Empirical Verbatim Quote Popover */}
+      <HmmQuotePopover
+        evidence={enableQuotes && !isTourOpen ? activeQuoteEvidence : null}
+        anchorPoint={quotePopover?.anchor ?? null}
+        isPinned={quotePopover?.isPinned ?? false}
+        onClose={() => setQuotePopover(null)}
+        onOpenActorRole={
+          onSelectActorRole
+            ? (actorId) => {
+                setQuotePopover(null);
+                if (isFullscreen) setIsFullscreen(false);
+                onSelectActorRole(actorId);
+              }
+            : undefined
+        }
       />
 
       {/* Interactive Guided Tour for Sidang/Presentasi */}
