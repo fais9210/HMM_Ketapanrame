@@ -40,7 +40,7 @@ export const ComparativeAnalytics: React.FC<ComparativeAnalyticsProps> = ({
     labels: filteredInformants.map((inf) => `${inf.name} (${inf.code})`),
     datasets: [
       {
-        label: 'Total Tema Terkoding (Nilai = 1)',
+        label: 'Total Tema Aktif (Nilai = 1)',
         data: filteredInformants.map((inf) => inf.totalCodedThemes),
         backgroundColor: filteredInformants.map(
           (inf) => inf.avatarColor || 'rgba(99, 102, 241, 0.8)'
@@ -68,7 +68,7 @@ export const ComparativeAnalytics: React.FC<ComparativeAnalyticsProps> = ({
       labels: [`Laki-laki (${maleInfs.length} Kasus)`, `Perempuan (${femaleInfs.length} Kasus)`],
       datasets: [
         {
-          label: 'Rata-rata Tema Terkoding',
+          label: 'Rata-rata Tema Aktif',
           data: [Number(maleAvg.toFixed(1)), Number(femaleAvg.toFixed(1))],
           backgroundColor: ['rgba(59, 130, 246, 0.85)', 'rgba(236, 72, 153, 0.85)'],
           borderRadius: 6,
@@ -89,7 +89,7 @@ export const ComparativeAnalytics: React.FC<ComparativeAnalyticsProps> = ({
       labels: ['26-35 tahun (1 Kasus)', '36-45 tahun (2 Kasus)', '46-55 tahun (2 Kasus)'],
       datasets: [
         {
-          label: 'Total Kumulatif Tema Terkoding',
+          label: 'Total Kumulatif Tema Aktif',
           data: counts,
           backgroundColor: [
             'rgba(99, 102, 241, 0.85)',
@@ -114,7 +114,7 @@ export const ComparativeAnalytics: React.FC<ComparativeAnalyticsProps> = ({
       labels: ['SMA/SMK (1 Kasus)', 'S1 (3 Kasus)', 'S2 (1 Kasus)'],
       datasets: [
         {
-          label: 'Total Tema Terkoding',
+          label: 'Total Tema Aktif',
           data: counts,
           backgroundColor: [
             'rgba(245, 158, 11, 0.85)',

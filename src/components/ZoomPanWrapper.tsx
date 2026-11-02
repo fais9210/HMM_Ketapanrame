@@ -147,7 +147,13 @@ export const ZoomPanWrapper: React.FC<ZoomPanWrapperProps> = ({
     if ((e.button === 0 && (isPanMode || zoom > 1.05)) || e.button === 1) {
       // Ignore if clicking directly on a button or interactive node
       const target = e.target as HTMLElement;
-      if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('a')) {
+      if (
+        target.closest('button') ||
+        target.closest('input') ||
+        target.closest('select') ||
+        target.closest('a') ||
+        target.closest('[data-interactive="true"]')
+      ) {
         return;
       }
 

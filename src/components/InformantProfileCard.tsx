@@ -210,7 +210,7 @@ export const InformantProfileCard: React.FC<InformantProfileCardProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <Tags className="w-3.5 h-3.5 text-blue-600" />
-                Tema Terkoding Aktif
+                Tema Aktif
               </span>
               <span className="text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
                 {connectedThemes.length} / 16 Tema

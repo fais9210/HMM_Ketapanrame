@@ -37,10 +37,12 @@ import {
   RotateCcw,
   CheckCircle2,
   Presentation,
+  ArrowUpRight,
 } from 'lucide-react';
 import { PublicationExportModal } from './PublicationExportModal';
 import { HmmGuidedTour } from './HmmGuidedTour';
 import { ZoomPanWrapper } from './ZoomPanWrapper';
+import { HmmActorId, hmmActorOrder } from '../data/actorRelationsData';
 
 export interface NodeItem {
   id: string;
@@ -59,11 +61,13 @@ export interface HmmFrameworkModelProps {
   steps?: HmmFlowStep[];
   onSelectStep?: (step: HmmFlowStep) => void;
   selectedStepId?: string | null;
+  onSelectActorRole?: (actorId: HmmActorId) => void;
 }
 
 export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
   steps,
   onSelectStep,
+  onSelectActorRole,
 }) => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -337,6 +341,11 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
 
   const handleNodeClick = (nodeId: string) => {
     if (isTourOpen) return;
+    if (hmmActorOrder.includes(nodeId as HmmActorId) && onSelectActorRole) {
+      if (isFullscreen) setIsFullscreen(false);
+      onSelectActorRole(nodeId as HmmActorId);
+      return;
+    }
     setSelectedNodeId(selectedNodeId === nodeId ? null : nodeId);
   };
 
@@ -457,7 +466,26 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
           <div className="grid grid-cols-12 gap-3 items-start">
             {/* Kolom 1: Peran Aktor (grid 2 cols) */}
             <div className="col-span-2 space-y-2">
-              <div className="bg-sky-50 border border-sky-300 rounded-xl p-2 text-center">
+              <div
+                role="button"
+                tabIndex={0}
+                data-interactive="true"
+                onClick={() => {
+                  if (!isTourOpen && onSelectActorRole) {
+                    if (isFullscreen) setIsFullscreen(false);
+                    onSelectActorRole('actor-ketua-bumdes');
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && !isTourOpen && onSelectActorRole) {
+                    e.preventDefault();
+                    if (isFullscreen) setIsFullscreen(false);
+                    onSelectActorRole('actor-ketua-bumdes');
+                  }
+                }}
+                className="bg-sky-50 border border-sky-300 hover:border-sky-500 rounded-xl p-2 text-center cursor-pointer transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                title="Klik untuk membuka halaman penjelasan relasi peran aktor"
+              >
                 <h3 className="font-extrabold text-xs text-sky-950 uppercase tracking-tight">
                   1. PERAN AKTOR
                 </h3>
@@ -468,131 +496,211 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
                 {/* 1.1 Ketua BUMDes */}
                 <div
                   id="actor-ketua-bumdes"
+                  role="button"
+                  tabIndex={0}
+                  data-interactive="true"
                   onClick={() => handleNodeClick('actor-ketua-bumdes')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleNodeClick('actor-ketua-bumdes');
+                    }
+                  }}
                   onMouseEnter={() => setHoveredNodeId('actor-ketua-bumdes')}
                   onMouseLeave={() => setHoveredNodeId(null)}
-                  className={`p-2.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
+                  className={`group p-2.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
                     isHighlighted('actor-ketua-bumdes')
                       ? 'bg-white border-blue-300 hover:border-blue-500 hover:shadow-md'
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'actor-ketua-bumdes' ? 'ring-2 ring-blue-600 bg-blue-50/50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-                      <User className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                        <User className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 leading-tight">Ketua BUMDes</h4>
+                        <p className="text-[10px] text-slate-500 font-medium">Pengelola kelembagaan</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Ketua BUMDes</h4>
-                      <p className="text-[10px] text-slate-500 font-medium">Pengelola kelembagaan</p>
-                    </div>
+                    <ArrowUpRight className="no-export w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0 transition" />
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug border-t border-slate-100 pt-1.5">
                     <strong>Fungsi:</strong> koordinasi, pengambilan keputusan, informasi, promosi
                   </p>
+                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-blue-700 flex items-center justify-between">
+                    <span>Buka halaman relasi</span>
+                    <span>&rarr;</span>
+                  </div>
                 </div>
 
                 {/* 1.2 Kepala Desa */}
                 <div
                   id="actor-kades"
+                  role="button"
+                  tabIndex={0}
+                  data-interactive="true"
                   onClick={() => handleNodeClick('actor-kades')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleNodeClick('actor-kades');
+                    }
+                  }}
                   onMouseEnter={() => setHoveredNodeId('actor-kades')}
                   onMouseLeave={() => setHoveredNodeId(null)}
-                  className={`p-2.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
+                  className={`group p-2.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${
                     isHighlighted('actor-kades')
                       ? 'bg-white border-emerald-300 hover:border-emerald-500 hover:shadow-md'
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'actor-kades' ? 'ring-2 ring-emerald-600 bg-emerald-50/50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                      <Building2 className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <Building2 className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 leading-tight">Kepala Desa</h4>
+                        <p className="text-[10px] text-slate-500 font-medium">Otoritas & legitimasi</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Kepala Desa</h4>
-                      <p className="text-[10px] text-slate-500 font-medium">Otoritas & legitimasi</p>
-                    </div>
+                    <ArrowUpRight className="no-export w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 shrink-0 transition" />
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug border-t border-slate-100 pt-1.5">
                     <strong>Fungsi:</strong> legitimasi, dukungan kelembagaan, koordinasi
                   </p>
+                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-emerald-700 flex items-center justify-between">
+                    <span>Buka halaman relasi</span>
+                    <span>&rarr;</span>
+                  </div>
                 </div>
 
                 {/* 1.3 Ketua KUB */}
                 <div
                   id="actor-ketua-kub"
+                  role="button"
+                  tabIndex={0}
+                  data-interactive="true"
                   onClick={() => handleNodeClick('actor-ketua-kub')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleNodeClick('actor-ketua-kub');
+                    }
+                  }}
                   onMouseEnter={() => setHoveredNodeId('actor-ketua-kub')}
                   onMouseLeave={() => setHoveredNodeId(null)}
-                  className={`p-2.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
+                  className={`group p-2.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 ${
                     isHighlighted('actor-ketua-kub')
                       ? 'bg-white border-amber-300 hover:border-amber-500 hover:shadow-md'
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'actor-ketua-kub' ? 'ring-2 ring-amber-600 bg-amber-50/50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                      <Users className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                        <Users className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 leading-tight">Ketua KUB</h4>
+                        <p className="text-[10px] text-slate-500 font-medium">Pengelola kelompok komunitas</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Ketua KUB</h4>
-                      <p className="text-[10px] text-slate-500 font-medium">Pengelola kelompok komunitas</p>
-                    </div>
+                    <ArrowUpRight className="no-export w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600 shrink-0 transition" />
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug border-t border-slate-100 pt-1.5">
                     <strong>Fungsi:</strong> koordinasi kelompok, promosi, partisipasi
                   </p>
+                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-amber-700 flex items-center justify-between">
+                    <span>Buka halaman relasi</span>
+                    <span>&rarr;</span>
+                  </div>
                 </div>
 
                 {/* 1.4 Admin Media Sosial */}
                 <div
                   id="actor-admin"
+                  role="button"
+                  tabIndex={0}
+                  data-interactive="true"
                   onClick={() => handleNodeClick('actor-admin')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleNodeClick('actor-admin');
+                    }
+                  }}
                   onMouseEnter={() => setHoveredNodeId('actor-admin')}
                   onMouseLeave={() => setHoveredNodeId(null)}
-                  className={`p-2.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
+                  className={`group p-2.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 ${
                     isHighlighted('actor-admin')
                       ? 'bg-white border-purple-300 hover:border-purple-500 hover:shadow-md'
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'actor-admin' ? 'ring-2 ring-purple-600 bg-purple-50/50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                      <Smartphone className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                        <Smartphone className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 leading-tight">Admin Media Sosial</h4>
+                        <p className="text-[10px] text-slate-500 font-medium">Mediator digital</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Admin Media Sosial</h4>
-                      <p className="text-[10px] text-slate-500 font-medium">Mediator digital</p>
-                    </div>
+                    <ArrowUpRight className="no-export w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600 shrink-0 transition" />
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug border-t border-slate-100 pt-1.5">
                     <strong>Fungsi:</strong> produksi konten, distribusi informasi, pengelolaan platform
                   </p>
+                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-purple-700 flex items-center justify-between">
+                    <span>Buka halaman relasi</span>
+                    <span>&rarr;</span>
+                  </div>
                 </div>
 
                 {/* 1.5 Tenan Pujasera */}
                 <div
                   id="actor-tenan"
+                  role="button"
+                  tabIndex={0}
+                  data-interactive="true"
                   onClick={() => handleNodeClick('actor-tenan')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleNodeClick('actor-tenan');
+                    }
+                  }}
                   onMouseEnter={() => setHoveredNodeId('actor-tenan')}
                   onMouseLeave={() => setHoveredNodeId(null)}
-                  className={`p-2.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
+                  className={`group p-2.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600 ${
                     isHighlighted('actor-tenan')
                       ? 'bg-white border-rose-300 hover:border-rose-500 hover:shadow-md'
                       : 'opacity-30 bg-slate-50 border-slate-200'
                   } ${selectedNodeId === 'actor-tenan' ? 'ring-2 ring-rose-600 bg-rose-50/50' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
-                      <Store className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                        <Store className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-slate-900 leading-tight">Tenan Pujasera/Food Court</h4>
+                        <p className="text-[10px] text-slate-500 font-medium">Aktor ekonomi</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs text-slate-900 leading-tight">Tenan Pujasera/Food Court</h4>
-                      <p className="text-[10px] text-slate-500 font-medium">Aktor ekonomi</p>
-                    </div>
+                    <ArrowUpRight className="no-export w-3.5 h-3.5 text-slate-400 group-hover:text-rose-600 shrink-0 transition" />
                   </div>
                   <p className="text-[9.5px] text-slate-600 mt-1.5 leading-snug border-t border-slate-100 pt-1.5">
                     <strong>Fungsi:</strong> promosi produk, transaksi, interaksi pelanggan
                   </p>
+                  <div className="no-export mt-1.5 pt-1 border-t border-slate-100 text-[9.5px] font-semibold text-rose-700 flex items-center justify-between">
+                    <span>Buka halaman relasi</span>
+                    <span>&rarr;</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1295,148 +1403,7 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
             </div>
           </div>
 
-          {/* 4. Empirical Evidence Section */}
-          <div className="border-2 border-blue-200 rounded-2xl p-4 bg-slate-50/50 space-y-3">
-            <div className="text-center">
-              <h3 className="font-extrabold text-xs sm:text-sm text-blue-900 uppercase tracking-wider">
-                BUKTI EMPIRIS DARI HASIL ANALISIS
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-6 gap-2.5">
-              {/* 1. Word Cloud */}
-              <div
-                id="emp-wordcloud"
-                onClick={() => handleNodeClick('emp-wordcloud')}
-                className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
-                  isHighlighted('emp-wordcloud')
-                    ? 'bg-white border-blue-200 hover:border-blue-500'
-                    : 'opacity-30 bg-slate-50 border-slate-200'
-                } ${selectedNodeId === 'emp-wordcloud' ? 'ring-2 ring-blue-600' : ''}`}
-              >
-                <div className="flex items-center gap-1.5 text-blue-700 font-bold text-xs mb-1.5">
-                  <Cloud className="w-4 h-4 text-blue-600" />
-                  <span>Word Cloud</span>
-                </div>
-                <p className="text-[9.5px] text-slate-700 leading-snug">
-                  &bull; <strong>Kata dominan:</strong> digital, media, komunikasi, informasi, platform, usaha, masyarakat, pemasaran, produk, jangkauan, kepercayaan.
-                </p>
-                <p className="text-[9px] text-slate-500 mt-1">
-                  &bull; Menunjukkan lanskap wacana digital sangat kuat.
-                </p>
-              </div>
-
-              {/* 2. Matrix Coding Query */}
-              <div
-                id="emp-matrix"
-                onClick={() => handleNodeClick('emp-matrix')}
-                className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
-                  isHighlighted('emp-matrix')
-                    ? 'bg-white border-emerald-200 hover:border-emerald-500'
-                    : 'opacity-30 bg-slate-50 border-slate-200'
-                } ${selectedNodeId === 'emp-matrix' ? 'ring-2 ring-emerald-600' : ''}`}
-              >
-                <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs mb-1.5">
-                  <LayoutGrid className="w-4 h-4 text-emerald-600" />
-                  <span>Matrix Coding</span>
-                </div>
-                <p className="text-[9.5px] text-slate-700 leading-snug">
-                  &bull; <strong>Tema utama:</strong> penggunaan media digital, informasi, promosi, partisipasi, pemasaran, produk digital, kepercayaan.
-                </p>
-                <p className="text-[9px] text-slate-500 mt-1">
-                  &bull; Menunjukkan keterhubungan tema dan aktor.
-                </p>
-              </div>
-
-              {/* 3. Evidence Coding */}
-              <div
-                id="emp-evidence"
-                onClick={() => handleNodeClick('emp-evidence')}
-                className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
-                  isHighlighted('emp-evidence')
-                    ? 'bg-white border-amber-200 hover:border-amber-500'
-                    : 'opacity-30 bg-slate-50 border-slate-200'
-                } ${selectedNodeId === 'emp-evidence' ? 'ring-2 ring-amber-600' : ''}`}
-              >
-                <div className="flex items-center gap-1.5 text-amber-700 font-bold text-xs mb-1.5">
-                  <FileText className="w-4 h-4 text-amber-600" />
-                  <span>Evidence Coding</span>
-                </div>
-                <p className="text-[9.5px] text-slate-700 leading-snug">
-                  &bull; <strong>Bukti nyata:</strong> TikTok BUMDes, TikTok KUB, konten audio-visual, QRIS, promosi, produk digital.
-                </p>
-                <p className="text-[9px] text-slate-500 mt-1">
-                  &bull; Praktik komunikasi berjalan di berbagai level aktivitas.
-                </p>
-              </div>
-
-              {/* 4. Word Similarity */}
-              <div
-                id="emp-similarity"
-                onClick={() => handleNodeClick('emp-similarity')}
-                className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
-                  isHighlighted('emp-similarity')
-                    ? 'bg-white border-emerald-200 hover:border-emerald-500'
-                    : 'opacity-30 bg-slate-50 border-slate-200'
-                } ${selectedNodeId === 'emp-similarity' ? 'ring-2 ring-emerald-600' : ''}`}
-              >
-                <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs mb-1.5">
-                  <Share2 className="w-4 h-4 text-emerald-600" />
-                  <span>Word Similarity</span>
-                </div>
-                <p className="text-[9.5px] text-slate-700 leading-snug">
-                  &bull; <strong>Pearson:</strong> 0,679–0,845 (rata-rata 0,746).
-                </p>
-                <p className="text-[9px] text-slate-500 mt-1">
-                  &bull; Konvergensi wacana tinggi antaraktor meski peran berbeda.
-                </p>
-              </div>
-
-              {/* 5. Project Map */}
-              <div
-                id="emp-projectmap"
-                onClick={() => handleNodeClick('emp-projectmap')}
-                className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
-                  isHighlighted('emp-projectmap')
-                    ? 'bg-white border-blue-200 hover:border-blue-500'
-                    : 'opacity-30 bg-slate-50 border-slate-200'
-                } ${selectedNodeId === 'emp-projectmap' ? 'ring-2 ring-blue-600' : ''}`}
-              >
-                <div className="flex items-center gap-1.5 text-blue-700 font-bold text-xs mb-1.5">
-                  <BookOpen className="w-4 h-4 text-blue-600" />
-                  <span>Project Map</span>
-                </div>
-                <p className="text-[9.5px] text-slate-700 leading-snug">
-                  &bull; <strong>Relasi:</strong> aktor, platform, penggunaan media, produk digital, informasi, partisipasi, kepercayaan.
-                </p>
-                <p className="text-[9px] text-slate-500 mt-1">
-                  &bull; Ekosistem komunikasi digital saling terkait.
-                </p>
-              </div>
-
-              {/* 6. Crosstab */}
-              <div
-                id="emp-crosstab"
-                onClick={() => handleNodeClick('emp-crosstab')}
-                className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs ${
-                  isHighlighted('emp-crosstab')
-                    ? 'bg-white border-purple-200 hover:border-purple-500'
-                    : 'opacity-30 bg-slate-50 border-slate-200'
-                } ${selectedNodeId === 'emp-crosstab' ? 'ring-2 ring-purple-600' : ''}`}
-              >
-                <div className="flex items-center gap-1.5 text-purple-700 font-bold text-xs mb-1.5">
-                  <Users className="w-4 h-4 text-purple-600" />
-                  <span>Crosstab</span>
-                </div>
-                <p className="text-[9.5px] text-slate-700 leading-snug">
-                  &bull; <strong>Pembeda utama:</strong> Peran aktor (bukan umur, gender, atau pendidikan).
-                </p>
-                <p className="text-[9px] text-slate-500 mt-1">
-                  &bull; Posisi dan fungsi menentukan praktik komunikasi.
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* 4. Empirical Evidence Section (Hidden per user request) */}
 
           {/* 5. Footer Section (Keterangan, Inti Deep Mediatization, Kontribusi Teoretis, Output Akhir) */}
           <div className="grid grid-cols-12 gap-3 items-center pt-2">
@@ -1493,7 +1460,7 @@ export const HmmFrameworkModel: React.FC<HmmFrameworkModelProps> = ({
         title="Gambar 1. Model Hybrid Mediatization Mapping (HMM)"
         figureNumber="Gambar 1"
         figureTitle="Model Hybrid Mediatization Mapping (HMM) Ekosistem BUMDes Ketapanrame"
-        figureCaptionNote="Model alur 6 kolom mediatisasi hibrida yang menghubungkan peran aktor, infrastruktur digital media/platform, praktik komunikasi, pola interaksi, representasi digital, visibility/jangkauan, aktivitas sosial-ekonomi, dan muara legitimasi/kepercayaan. Didukung oleh 6 klaster bukti empiris (Word Cloud, Matrix Coding, Evidence Coding, Word Similarity, Project Map, Crosstab)."
+        figureCaptionNote="Model alur 6 kolom mediatisasi hibrida yang menghubungkan peran aktor, infrastruktur digital media/platform, praktik komunikasi, pola interaksi, representasi digital, visibility/jangkauan, aktivitas sosial-ekonomi, dan muara legitimasi/kepercayaan."
         defaultFilename="Gambar_1_Model_Hybrid_Mediatization_Mapping_HMM"
         targetElementRef={diagramCaptureRef}
       />

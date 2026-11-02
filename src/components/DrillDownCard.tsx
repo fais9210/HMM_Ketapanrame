@@ -87,7 +87,7 @@ export const DrillDownCard: React.FC<DrillDownCardProps> = ({
         <div className="p-3.5 max-h-56 overflow-y-auto space-y-2">
           <div className="flex items-center justify-between text-[11px]">
             <span className="font-semibold text-slate-700">
-              Tema Terkoding Aktif ({connectedThemes.length})
+              Tema Aktif ({connectedThemes.length})
             </span>
             <span className="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded font-semibold">
               Nilai = 1

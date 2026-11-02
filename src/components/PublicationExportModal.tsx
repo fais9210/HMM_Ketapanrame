@@ -181,7 +181,7 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
                 Ekspor Gambar Siap Publikasi Jurnal &amp; Tesis
               </h3>
               <p className="text-xs text-slate-300 mt-0.5">
-                Standar Resolusi Tinggi 300 DPI &bull; Format Takarir APA 7th Edition &bull; PDF / PNG / SVG
+                Standar Resolusi Tinggi 300 DPI &bull; PDF / PNG / SVG
               </p>
             </div>
           </div>
@@ -199,7 +199,7 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
           <div className="space-y-3">
             <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
               <Settings2 className="w-3.5 h-3.5 text-indigo-600" />
-              1. Format Berkas &amp; Resolusi (DPI)
+              Format Berkas &amp; Resolusi (DPI)
             </h4>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -338,60 +338,62 @@ export const PublicationExportModal: React.FC<PublicationExportModalProps> = ({
             )}
           </div>
 
-          {/* Section 2: Takarir & Sitasi Otomatis (APA 7th Edition & LaTeX) */}
-          <div className="space-y-3 pt-2 border-t border-slate-200">
-            <div className="flex items-center justify-between">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-blue-600" />
-                2. Generator Takarir Gambar (Format APA 7th / Naskah)
-              </h4>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleCopyText(apa7Caption, 'apa7')}
-                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold flex items-center gap-1 transition cursor-pointer"
-                >
-                  {copiedFormat === 'apa7' ? (
-                    <>
-                      <Check className="w-3 h-3 text-emerald-600" />
-                      <span className="text-emerald-700">Tersalin!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3 h-3" />
-                      <span>Salin Format APA 7</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleCopyText(latexCode, 'latex')}
-                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold flex items-center gap-1 transition cursor-pointer"
-                >
-                  {copiedFormat === 'latex' ? (
-                    <>
-                      <Check className="w-3 h-3 text-emerald-600" />
-                      <span className="text-emerald-700">Tersalin!</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileCode2 className="w-3 h-3 text-purple-600" />
-                      <span>Salin LaTeX</span>
-                    </>
-                  )}
-                </button>
+          {/* Section 2: Takarir & Sitasi Otomatis (APA 7th Edition & LaTeX) - Disembunyikan */}
+          {false && (
+            <div className="space-y-3 pt-2 border-t border-slate-200">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-blue-600" />
+                  2. Generator Takarir Gambar (Format APA 7th / Naskah)
+                </h4>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyText(apa7Caption, 'apa7')}
+                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold flex items-center gap-1 transition cursor-pointer"
+                  >
+                    {copiedFormat === 'apa7' ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span className="text-emerald-700">Tersalin!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Salin Format APA 7</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyText(latexCode, 'latex')}
+                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold flex items-center gap-1 transition cursor-pointer"
+                  >
+                    {copiedFormat === 'latex' ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span className="text-emerald-700">Tersalin!</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileCode2 className="w-3 h-3 text-purple-600" />
+                        <span>Salin LaTeX</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* APA 7 Preview Box */}
-            <div className="p-3.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1.5 text-slate-900 font-serif">
-              <div className="font-bold text-xs text-slate-900">{figureNumber}</div>
-              <div className="italic text-xs font-semibold text-slate-800">{figureTitle}</div>
-              <div className="text-[11px] text-slate-600 pt-1 border-t border-amber-200/60 font-sans leading-relaxed">
-                <strong className="italic">Catatan.</strong> {figureCaptionNote}
+              {/* APA 7 Preview Box */}
+              <div className="p-3.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1.5 text-slate-900 font-serif">
+                <div className="font-bold text-xs text-slate-900">{figureNumber}</div>
+                <div className="italic text-xs font-semibold text-slate-800">{figureTitle}</div>
+                <div className="text-[11px] text-slate-600 pt-1 border-t border-amber-200/60 font-sans leading-relaxed">
+                  <strong className="italic">Catatan.</strong> {figureCaptionNote}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Modal Footer Actions */}

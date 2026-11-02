@@ -134,7 +134,7 @@ export const CrosstabMatrixView: React.FC<CrosstabMatrixViewProps> = ({
             onChange={(e) => setFilterType(e.target.value as any)}
             className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-md text-slate-700 font-medium text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
           >
-            <option value="active_only">Hanya Tema Aktif Terkoding (16)</option>
+            <option value="active_only">Hanya Tema Aktif (16)</option>
             <option value="all">Semua Node Termasuk Konseptual (29)</option>
             <option value="zero_only">Hanya Node Konseptual Induk (13)</option>
           </select>

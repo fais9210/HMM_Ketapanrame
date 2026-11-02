@@ -54,7 +54,6 @@ export const TOUR_STEPS: TourStep[] = [
       'actor-ketua-kub',
       'actor-admin',
       'actor-tenan',
-      'emp-crosstab',
     ],
     academicNarration:
       'Temuan Crosstab membuktikan bahwa variasi praktik komunikasi di desa tidak ditentukan oleh usia, jenis kelamin, atau latar pendidikan, melainkan oleh peran fungsional aktor (role-based). Setiap aktor memiliki lokus tanggung jawab yang spesifik dalam ekosistem.',
@@ -77,7 +76,6 @@ export const TOUR_STEPS: TourStep[] = [
       'media-fb',
       'media-qris',
       'media-audiovisual',
-      'emp-evidence',
     ],
     academicNarration:
       'BUMDes Ketapanrame mengadopsi ekologi media hibrida (hybrid media ecology). WhatsApp menjadi tulang punggung koordinasi internal, TikTok dan Facebook sebagai saluran storytelling & diseminasi publik, sementara QRIS menjadi infrastruktur transaksi finansial tanpa uang tunai.',
@@ -121,7 +119,6 @@ export const TOUR_STEPS: TourStep[] = [
       'pattern-horizontal',
       'pattern-ekonomi',
       'pattern-publik',
-      'emp-projectmap',
     ],
     academicNarration:
       'Interaksi di Ketapanrame bergerak dalam 4 pola terintegrasi: Vertikal-Institusional (pemerintahan), Horizontal-Komunitas (paguyuban & kelompok usaha), Ekonomi (tenan dan konsumen), serta Publik-Digital (admin dan warganet lintas daerah).',
@@ -142,7 +139,6 @@ export const TOUR_STEPS: TourStep[] = [
       'rep-info',
       'rep-produk',
       'rep-transaksi',
-      'emp-wordcloud',
     ],
     academicNarration:
       'Desa mentransformasikan objek fisik dan kegiatan sosial menjadi artefak digital: paket wisata digital, katalog produk UMKM, pengumuman layanan publik, hingga pencatatan transaksi elektronik yang transparan.',
@@ -161,7 +157,6 @@ export const TOUR_STEPS: TourStep[] = [
       'vis-publik',
       'vis-pasar',
       'vis-wisatawan',
-      'emp-similarity',
     ],
     academicNarration:
       'Mediatisasi melipatgandakan visibilitas desa wisata. Aksesibilitas informasi yang mudah di media sosial mendorong konversi minat calon wisatawan dari level lokal Mojokerto-Surabaya hingga skala nasional.',
@@ -179,7 +174,6 @@ export const TOUR_STEPS: TourStep[] = [
     targetNodeIds: [
       'downstream-aktivitas',
       'downstream-legitimasi',
-      'emp-matrix',
     ],
     academicNarration:
       'Muara dari proses mediatisasi adalah peningkatan nyata pada aktivitas ekonomi (omzet tenan, deviden desa) dan penguatan legitimasi sosial. Kredibilitas yang tinggi menciptakan iklim gotong royong yang semakin solid.',
@@ -216,14 +210,7 @@ export const TOUR_STEPS: TourStep[] = [
     stepNumber: 10,
     phaseTitle: 'Sintesis & Rekomendasi',
     title: 'Infrastruktur Sosial Digital BUMDes Ketapanrame',
-    targetNodeIds: [
-      'emp-wordcloud',
-      'emp-matrix',
-      'emp-evidence',
-      'emp-similarity',
-      'emp-projectmap',
-      'emp-crosstab',
-    ],
+    targetNodeIds: [],
     academicNarration:
       'Secara teoretis, HMM membuktikan konsep Deep Mediatization di pedesaan Indonesia: teknologi digital bukan instrumen eksternal yang pasif, melainkan fondasi infrastruktur sosial baru yang mengintegrasikan aspek kultural, ekonomi, dan kelembagaan secara harmonis.',
     keyInsights: [

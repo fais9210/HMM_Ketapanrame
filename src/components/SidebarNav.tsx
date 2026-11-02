@@ -26,6 +26,7 @@ import logoImg from '../assets/images/bumdes_hmm_logo_1787789361564.jpg';
 
 export type MainTabType =
   | 'hmm_flow'
+  | 'actor_relation'
   | 'project_map'
   | 'matrix_editor'
   | 'network'
@@ -108,35 +109,34 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
 
         {/* Main Core Navigation Tabs */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-          {/* Section: Model Riset (Gambar 1 & 2) */}
+          {/* Section: Model & Peta Relasi */}
           <div>
             <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 px-3 mb-2 flex items-center justify-between">
               <span>Model & Peta Relasi</span>
-              <span className="bg-indigo-950 text-indigo-300 text-[9px] px-1.5 py-0.5 rounded font-mono">
-                Gambar 1 & 2
-              </span>
             </div>
             <nav className="space-y-1">
-              {/* Tab 1: Model Alur HMM (Gambar 1) */}
+              {/* Tab 1: Hybrid Mediatization Mapping (HMM) */}
               <button
                 id="sidebar-tab-hmm-flow"
                 onClick={() => handleTabClick('hmm_flow')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer text-left ${
-                  activeTab === 'hmm_flow'
+                  activeTab === 'hmm_flow' || activeTab === 'actor_relation'
                     ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/30'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 <GitFork className="w-4 h-4 shrink-0 text-amber-400" />
-                <div className="truncate">
-                  <div className="leading-tight">Model Alur (Gambar 1)</div>
-                  <div className="text-[10px] font-normal text-slate-400 truncate">
-                    Alur Mediasi HMM & Validasi
+                <div className="min-w-0">
+                  <div className="leading-snug">Hybrid Mediatization Mapping (HMM)</div>
+                  <div className="text-[10px] font-normal text-indigo-100/80 truncate mt-0.5">
+                    {activeTab === 'actor_relation'
+                      ? 'Sedang membuka: Relasi Peran Aktor'
+                      : 'Alur Mediasi HMM & Validasi'}
                   </div>
                 </div>
               </button>
 
-              {/* Tab 2: Peta Relasi Integratif (Gambar 2) */}
+              {/* Tab 2: Peta Relasi Aktor */}
               <button
                 id="sidebar-tab-project-map"
                 onClick={() => handleTabClick('project_map')}
@@ -147,15 +147,15 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 }`}
               >
                 <Share2 className="w-4 h-4 shrink-0 text-blue-400" />
-                <div className="truncate">
-                  <div className="leading-tight">Peta Relasi (Gambar 2)</div>
-                  <div className="text-[10px] font-normal text-slate-400 truncate">
+                <div className="min-w-0">
+                  <div className="leading-snug">Peta Relasi Aktor</div>
+                  <div className="text-[10px] font-normal text-slate-400 truncate mt-0.5">
                     Project Map Interaktif 5 Aktor
                   </div>
                 </div>
               </button>
 
-              {/* Tab 3: Data Input Manual & Editor Matriks */}
+              {/* Tab 3: Input Data Manual */}
               <button
                 id="sidebar-tab-matrix-editor"
                 onClick={() => handleTabClick('matrix_editor')}
@@ -166,9 +166,9 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 }`}
               >
                 <TableProperties className="w-4 h-4 shrink-0 text-emerald-400" />
-                <div className="truncate">
-                  <div className="leading-tight">Input & Matriks Relasi</div>
-                  <div className="text-[10px] font-normal text-slate-400 truncate">
+                <div className="min-w-0">
+                  <div className="leading-snug">Input Data Manual</div>
+                  <div className="text-[10px] font-normal text-slate-400 truncate mt-0.5">
                     Editor Garis & Elemen Riset
                   </div>
                 </div>
@@ -224,78 +224,83 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 <span>Word Cloud & Frekuensi</span>
               </button>
 
-              {/* Crosstab Matrix */}
-              <button
-                id="sidebar-tab-crosstab"
-                onClick={() => handleTabClick('crosstab')}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  activeTab === 'crosstab'
-                    ? 'bg-slate-800 text-indigo-300 font-semibold border-l-2 border-indigo-500'
-                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-                }`}
-              >
-                <TableProperties className="w-4 h-4 text-center text-emerald-400" />
-                <span>Matriks Kros-Tabulasi</span>
-              </button>
+              {/* Crosstab Matrix & Findings (Hidden per user request) */}
+              {false && (
+                <>
+                  <button
+                    id="sidebar-tab-crosstab"
+                    onClick={() => handleTabClick('crosstab')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                      activeTab === 'crosstab'
+                        ? 'bg-slate-800 text-indigo-300 font-semibold border-l-2 border-indigo-500'
+                        : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                    }`}
+                  >
+                    <TableProperties className="w-4 h-4 text-center text-emerald-400" />
+                    <span>Matriks Kros-Tabulasi</span>
+                  </button>
 
-              {/* Findings */}
-              <button
-                id="sidebar-tab-findings"
-                onClick={() => handleTabClick('findings')}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  activeTab === 'findings'
-                    ? 'bg-slate-800 text-indigo-300 font-semibold border-l-2 border-indigo-500'
-                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-                }`}
-              >
-                <BookOpen className="w-4 h-4 text-center text-purple-400" />
-                <span>Temuan & Sintesis</span>
-              </button>
+                  <button
+                    id="sidebar-tab-findings"
+                    onClick={() => handleTabClick('findings')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                      activeTab === 'findings'
+                        ? 'bg-slate-800 text-indigo-300 font-semibold border-l-2 border-indigo-500'
+                        : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4 text-center text-purple-400" />
+                    <span>Temuan & Sintesis</span>
+                  </button>
+                </>
+              )}
             </nav>
           </div>
 
-          {/* Informants Quick Filter List */}
-          <div>
-            <div className="flex items-center justify-between px-3 mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <UserCheck className="w-3.5 h-3.5 text-indigo-400" />
-                Kasus Informan
-              </span>
-              {selectedInformantId && (
-                <button
-                  onClick={() => onSelectInformant(null)}
-                  className="text-[10px] text-indigo-400 hover:underline cursor-pointer"
-                >
-                  Reset
-                </button>
-              )}
-            </div>
-            <div className="space-y-1">
-              {informants.map((inf) => {
-                const isSelected = selectedInformantId === inf.id;
-                return (
+          {/* Informants Quick Filter List (Hidden) */}
+          {false && (
+            <div>
+              <div className="flex items-center justify-between px-3 mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5 text-indigo-400" />
+                  Kasus Informan
+                </span>
+                {selectedInformantId && (
                   <button
-                    key={inf.id}
-                    id={`sidebar-inf-${inf.id}`}
-                    onClick={() => onSelectInformant(isSelected ? null : inf.id)}
-                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                      isSelected
-                        ? 'bg-indigo-950 text-white border border-indigo-500/50'
-                        : 'text-slate-300 hover:bg-slate-800'
-                    }`}
+                    onClick={() => onSelectInformant(null)}
+                    className="text-[10px] text-indigo-400 hover:underline cursor-pointer"
                   >
-                    <div className="flex items-center gap-2 truncate">
-                      <User className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                      <span className="truncate font-medium">{inf.name}</span>
-                    </div>
-                    <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.2 rounded">
-                      {inf.totalCodedThemes}
-                    </span>
+                    Reset
                   </button>
-                );
-              })}
+                )}
+              </div>
+              <div className="space-y-1">
+                {informants.map((inf) => {
+                  const isSelected = selectedInformantId === inf.id;
+                  return (
+                    <button
+                      key={inf.id}
+                      id={`sidebar-inf-${inf.id}`}
+                      onClick={() => onSelectInformant(isSelected ? null : inf.id)}
+                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-950 text-white border border-indigo-500/50'
+                          : 'text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <User className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span className="truncate font-medium">{inf.name}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.2 rounded">
+                        {inf.totalCodedThemes}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Legend Quick Reference in Sidebar */}
           <div className="p-3 bg-slate-850/80 rounded-xl border border-slate-800 space-y-2 text-xs">

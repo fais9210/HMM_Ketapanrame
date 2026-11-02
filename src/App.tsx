@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   completeStructuredDataset,
   informantsData,
@@ -25,6 +25,8 @@ import { CrosstabMatrixView } from './components/CrosstabMatrixView';
 import { JsonViewer } from './components/JsonViewer';
 import { PrintableReportView } from './components/PrintableReportView';
 import { HmmFrameworkModel } from './components/HmmFrameworkModel';
+import { ActorRelationPage } from './components/ActorRelationPage';
+import { HmmActorId, actorRelationsCatalog } from './data/actorRelationsData';
 import { IntegrativeRelationMap } from './components/IntegrativeRelationMap';
 import { DataInputMatrixEditor } from './components/DataInputMatrixEditor';
 import { useMobileBackHandler } from './hooks/useMobileBackHandler';
@@ -53,11 +55,18 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<MainTabType>('hmm_flow');
+  const [selectedActorRoleId, setSelectedActorRoleId] = useState<HmmActorId>('actor-ketua-bumdes');
   const [selectedNodeData, setSelectedNodeData] = useState<any | null>(null);
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
   const [selectedInformantId, setSelectedInformantId] = useState<string | null>(null);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollMainToTop = () => {
+    mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Mobile Back Button and History State Manager Hook
   const {
@@ -248,7 +257,7 @@ export default function App() {
       />
 
       {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div ref={mainScrollRef} className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         {/* Top Header Bar */}
         <header className="min-h-14 sm:min-h-16 bg-white border-b border-slate-200 px-3 sm:px-6 py-2.5 sm:py-0 flex items-center justify-between shrink-0 sticky top-0 z-20 shadow-2xs gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -285,9 +294,11 @@ export default function App() {
             </div>
             <div className="min-w-0">
               <h2 className="font-bold text-xs sm:text-base text-slate-900 tracking-tight leading-tight truncate">
-                {activeTab === 'hmm_flow' && 'Gambar 1: Model Alur Mediasi Hierarkis (HMM)'}
-                {activeTab === 'project_map' && 'Gambar 2: Peta Relasi Aktor & Tema (Project Map)'}
-                {activeTab === 'matrix_editor' && 'Input Data Manual & Editor Matriks Checklist Relasi'}
+                {activeTab === 'hmm_flow' && 'Hybrid Mediatization Mapping (HMM)'}
+                {activeTab === 'actor_relation' &&
+                  `Analisis Relasi Peran Aktor: ${actorRelationsCatalog[selectedActorRoleId]?.shortTitle || 'Aktor HMM'}`}
+                {activeTab === 'project_map' && 'Peta Relasi Aktor'}
+                {activeTab === 'matrix_editor' && 'Input Data Manual'}
                 {activeTab === 'network' && 'Dashboard Interaktif & Peta Hubungan Kualitatif'}
                 {activeTab === 'comparative' && 'Comparative Analytics (Stacked Charts)'}
                 {activeTab === 'lexical' && 'Lexical Analysis (Word Frequency & Cloud)'}
@@ -311,10 +322,10 @@ export default function App() {
                     ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="Model Alur HMM (Gambar 1)"
+                title="Hybrid Mediatization Mapping (HMM)"
               >
                 <GitFork className="w-3 h-3 text-indigo-600" />
-                <span>Gambar 1</span>
+                <span>HMM</span>
               </button>
               <button
                 onClick={() => setActiveTab('project_map')}
@@ -323,10 +334,10 @@ export default function App() {
                     ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="Peta Relasi Integratif (Gambar 2)"
+                title="Peta Relasi Aktor"
               >
                 <Share2 className="w-3 h-3 text-emerald-600" />
-                <span>Gambar 2</span>
+                <span>Peta Relasi Aktor</span>
               </button>
               <button
                 onClick={() => setActiveTab('matrix_editor')}
@@ -335,10 +346,10 @@ export default function App() {
                     ? 'bg-white text-purple-700 shadow-2xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="Input & Editor Matriks Relasi"
+                title="Input Data Manual"
               >
                 <TableProperties className="w-3 h-3 text-purple-600" />
-                <span>Editor</span>
+                <span>Input Data Manual</span>
               </button>
             </div>
           </div>
@@ -364,8 +375,39 @@ export default function App() {
               <HmmFrameworkModel
                 steps={hmmSteps}
                 onSelectStep={(step) => console.log('Selected step:', step)}
+                onSelectActorRole={(actorId) => {
+                  setSelectedActorRoleId(actorId);
+                  setActiveTab('actor_relation');
+                  scrollMainToTop();
+                }}
               />
             </div>
+          )}
+
+          {/* SUB-HALAMAN BARU: PENJELASAN RELASI PERAN AKTOR DARI GAMBAR 1 */}
+          {activeTab === 'actor_relation' && (
+            <ActorRelationPage
+              selectedActorId={selectedActorRoleId}
+              onSelectActor={(actorId) => {
+                setSelectedActorRoleId(actorId);
+                scrollMainToTop();
+              }}
+              onBackToHmmFlow={() => {
+                setActiveTab('hmm_flow');
+                scrollMainToTop();
+              }}
+              onOpenProjectMap={(projectMapNodeId) => {
+                const targetNode = projectMapNodes.find((n) => n.id === projectMapNodeId);
+                if (targetNode) setSelectedNodeData(targetNode);
+                setActiveTab('project_map');
+                scrollMainToTop();
+              }}
+              onOpenCrosstab={(informantId) => {
+                setSelectedInformantId(informantId);
+                setActiveTab('crosstab');
+                scrollMainToTop();
+              }}
+            />
           )}
 
           {/* TAB 2: PETA RELASI INTEGRATIF (GAMBAR 2 - PROJECT MAP) */}
@@ -674,21 +716,25 @@ export default function App() {
         <div className="lg:hidden fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-30 px-1.5 py-1.5 flex items-center justify-around text-slate-400 shadow-lg">
           <button
             onClick={() => setActiveTab('hmm_flow')}
+            title="Hybrid Mediatization Mapping (HMM)"
             className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
-              activeTab === 'hmm_flow' ? 'text-indigo-400 font-bold bg-slate-800' : 'hover:text-white'
+              activeTab === 'hmm_flow' || activeTab === 'actor_relation'
+                ? 'text-indigo-400 font-bold bg-slate-800'
+                : 'hover:text-white'
             }`}
           >
             <GitFork className="w-4 h-4 mb-0.5" />
-            <span>Alur HMM</span>
+            <span>HMM</span>
           </button>
           <button
             onClick={() => setActiveTab('project_map')}
+            title="Peta Relasi Aktor"
             className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
               activeTab === 'project_map' ? 'text-emerald-400 font-bold bg-slate-800' : 'hover:text-white'
             }`}
           >
             <Share2 className="w-4 h-4 mb-0.5" />
-            <span>Peta Relasi</span>
+            <span>Peta Aktor</span>
           </button>
           <button
             onClick={() => setActiveTab('comparative')}
@@ -699,24 +745,28 @@ export default function App() {
             <BarChart3 className="w-4 h-4 mb-0.5" />
             <span>Grafik</span>
           </button>
-          <button
-            onClick={() => setActiveTab('crosstab')}
-            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
-              activeTab === 'crosstab' ? 'text-purple-400 font-bold bg-slate-800' : 'hover:text-white'
-            }`}
-          >
-            <TableProperties className="w-4 h-4 mb-0.5" />
-            <span>Matriks</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('findings')}
-            className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
-              activeTab === 'findings' ? 'text-amber-400 font-bold bg-slate-800' : 'hover:text-white'
-            }`}
-          >
-            <BookOpen className="w-4 h-4 mb-0.5" />
-            <span>Temuan</span>
-          </button>
+          {false && (
+            <>
+              <button
+                onClick={() => setActiveTab('crosstab')}
+                className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
+                  activeTab === 'crosstab' ? 'text-purple-400 font-bold bg-slate-800' : 'hover:text-white'
+                }`}
+              >
+                <TableProperties className="w-4 h-4 mb-0.5" />
+                <span>Matriks</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('findings')}
+                className={`flex flex-col items-center py-1 px-2 rounded-lg text-[10px] font-medium transition cursor-pointer ${
+                  activeTab === 'findings' ? 'text-amber-400 font-bold bg-slate-800' : 'hover:text-white'
+                }`}
+              >
+                <BookOpen className="w-4 h-4 mb-0.5" />
+                <span>Temuan</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

@@ -949,7 +949,7 @@ export function generateStandaloneHtml(dataset: StructuredCrosstabDataset): stri
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <i class="fa-solid fa-tags text-blue-600"></i>
-                  Tema Terkoding Aktif
+                  Tema Aktif
                 </span>
                 <span class="text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
                   \${themes.length} / 16 Tema

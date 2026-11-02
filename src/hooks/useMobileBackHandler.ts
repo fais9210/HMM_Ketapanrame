@@ -57,6 +57,7 @@ export function useMobileBackHandler({
       const initialTab = (window.location.hash.replace('#', '') as MainTabType) || 'hmm_flow';
       const validTabs: MainTabType[] = [
         'hmm_flow',
+        'actor_relation',
         'project_map',
         'matrix_editor',
         'network',
